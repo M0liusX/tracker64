@@ -21,3 +21,11 @@ auto run() -> void {
     rsp.clock = -256;
     while(rsp.clock < 0) rsp.main();
 }
+
+auto getimem() -> void* {
+   return rsp.getimem();
+}
+
+auto getdmem() -> void* {
+   return rsp.getdmem();
+}

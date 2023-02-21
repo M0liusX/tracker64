@@ -84,7 +84,8 @@ auto RSP::power(bool reset) -> void {
   status.interruptOnBreak = 0;
   for(auto& signal : status.signal) signal = 0;
   for(auto& r : ipu.r) r.u32 = 0;
-  ipu.pc = 0;
+  ipu.r[1].u32 = 0xFC0; // osTask start
+  ipu.pc = 0x80; // aspMain start
   branch = {};
   for(auto& r : vpu.r) r.u128 = 0;
   vpu.acch.u128 = 0;
@@ -124,6 +125,14 @@ auto RSP::power(bool reset) -> void {
   if constexpr(Accuracy::RSP::SISD) {
     // platform->status("RSP vectorization disabled (no SSE 4.1 support)");
   }
+}
+
+auto RSP::getimem() -> void* {
+   return imem.data;
+}
+
+auto RSP::getdmem() -> void* {
+   return dmem.data;
 }
 
 }

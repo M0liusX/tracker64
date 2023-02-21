@@ -37,6 +37,10 @@ struct RSP : Thread, Memory::IO<RSP> {
 
   auto power(bool reset) -> void;
 
+  auto getimem() -> void*;
+  auto getdmem() -> void*;
+
+
   struct Pipeline {
     u32 address;
     u32 instruction;
