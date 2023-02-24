@@ -24,5 +24,32 @@
     <ClCompile Include="lib\libultra-audio\src\cseq.cpp">
       <Filter>libultra</Filter>
     </ClCompile>
+    <ClCompile Include="lib\libultra-audio\src\drvrNew.cpp">
+      <Filter>libultra</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\libultra-audio\src\filter.cpp">
+      <Filter>libultra</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\libultra-audio\src\mainbus.cpp">
+      <Filter>libultra</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\libultra-audio\src\save.cpp">
+      <Filter>libultra</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\libultra-audio\src\sl.cpp">
+      <Filter>libultra</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\libultra-audio\src\syndelete.cpp">
+      <Filter>libultra</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\libultra-audio\src\synthesizer.cpp">
+      <Filter>libultra</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\libultra-audio\src\auxbus.cpp">
+      <Filter>libultra</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\libultra-audio\src\resample.cpp">
+      <Filter>libultra</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -254,7 +254,7 @@ s32     alResampleParam(void *f, s32 paramID, void *param);
 
 typedef struct ALSave_s {
     ALFilter            filter;
-    s32	       		dramout;
+    s32	       		  dramout;
     s32                 first;
 } ALSave;
 
