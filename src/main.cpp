@@ -58,10 +58,16 @@ void audioDmaNew() {
 #define AUDIO_EVT_COUNT    32
 #define AUDIO_FREQUENCY    32000
 
+#define AUDIO_BUFSZ        1024
+#define AUDIO_CLIST_SIZE   4 * 1024
+
 static __declspec(align(16)) u8 audioHeap[AUDIO_HEAP_SIZE];
 static ALHeap audioHp;
 static ALGlobals audioGlobals;
 static ALCSPlayer cseqPlayer;
+
+static __declspec(align(16)) s16 audioBuffers[2][AUDIO_BUFSZ];
+static Acmd audioCmdList[AUDIO_CLIST_SIZE];
 
 int main() {
    load();
@@ -71,10 +77,14 @@ int main() {
    u8* dmem = static_cast<u8*>(getdmem());
    u8* rdram = static_cast<u8*>(getrdram());
    vector<u8> seqFile;
+   vector<u8> ctlFile;
+   vector<u8> tblFile;
 
-   loadbin("ucode/audio_data.zbin", dmem, 0);
-   loadbin("ucode/audio.zbin", imem, 0x80);
-   loadfile("samples/seq/rainbow.bin", seqFile);
+   loadbin("ucode/audio_data.zbin", dmem, 0); // rsp udata
+   loadbin("ucode/audio.zbin", imem, 0x80); // rsp ucode
+   loadfile("samples/seq/rainbow.bin", seqFile); // mp1 mario board seq
+   loadfile("samples/ctl/soundbank1.ctl", ctlFile); // mp1 soundbank file
+   loadfile("samples/tbl/wavetable1.tbl", tblFile); // mp1 wavetable file
    swapbytes(17, seqFile.data());
    memcpy(rdram, seqFile.data(), seqFile.size()); // TODO: Verify accuracy of this line
 
@@ -114,9 +124,18 @@ int main() {
    alCSeqNew(&cseq, seqFile.data());
    alCSPSetSeq(&cseqPlayer, &cseq);
 
-  // alBnkfNew(nullptr, nullptr);
+   //alBnkfNew((ALBankFile*) ctlFile.data(), tblFile.data()); // TODO, patch bank and wavetable for little endian?
+   //alCSPSetBank(&cseqPlayer, nullptr);
+   //alCSPPlay(&cseqPlayer);
 
-   run();
+   // TODO: Loop?
+   // s32 cmdLen = 0;
+   // alAudioFrame(audioCmdList, &cmdLen, audioBuffers[0], AUDIO_BUFSZ);
+   //memcpy(); // TODO Write to rdram byteswapped cmdList.
+   //memcpy(); // TODO Write to 0xFC0 a 64 bit value containing 32 bit address of rdram location of cmdList
+   //memcpy(); // TODO Write to 0xFC4 a 64 bit value containing big endian length of rdram cmdList cmdLen * sizeof(Acmd)?
+   run(); // TODO: Figure out when to reset RSP state?
+
 
    unload();
    cout << "Hello World" << endl;

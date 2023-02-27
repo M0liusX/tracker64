@@ -26,6 +26,8 @@
     <ClCompile Include="lib\libultra-audio\src\copy.cpp" />
     <ClCompile Include="lib\libultra-audio\src\cseq.cpp" />
     <ClCompile Include="lib\libultra-audio\src\csplayer.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\cspplay.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\cspsetbank.cpp" />
     <ClCompile Include="lib\libultra-audio\src\cspsetseq.cpp" />
     <ClCompile Include="lib\libultra-audio\src\drvrNew.cpp" />
     <ClCompile Include="lib\libultra-audio\src\env.cpp" />

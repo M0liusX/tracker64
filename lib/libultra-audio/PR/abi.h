@@ -221,23 +221,23 @@ typedef struct {
 typedef union {
 	Awords		words;
 	Aadpcm		adpcm;
-        Apolef          polef;
+   Apolef      polef;
 	Aclearbuff	clearbuff;
 	Aenvelope	envelope;
-        Ainterleave     interleave;
+   Ainterleave interleave;
 	Aloadbuff	loadbuff;
-        Aenvmixer       envmixer;
+   Aenvmixer   envmixer;
 	Aresample	resample;
 	Areverb		reverb;
 	Asavebuff	savebuff;
-	Asegment	segment;
-	Asetbuff	setbuff;
+	Asegment  	segment;
+	Asetbuff 	setbuff;
 	Asetvol		setvol;
-        Admemmove       dmemmove;
-        Aloadadpcm	loadadpcm;
-        Amixer		mixer;
-        Asetloop        setloop;
-        long long int	force_union_align;	/* dummy, force alignment */
+   Admemmove   dmemmove;
+   Aloadadpcm	loadadpcm;
+   Amixer		mixer;
+   Asetloop    setloop;
+   long long int	force_union_align;	/* dummy, force alignment */
 } Acmd;
 
 /*
