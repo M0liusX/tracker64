@@ -54,12 +54,14 @@ void audioDmaNew() {
 #define AUDIO_HEAP_SIZE    256 * 1024
 #define AUDIO_MAX_VOICES   4
 #define AUDIO_MAX_UPDATES  64
+#define AUDIO_MAX_CHANNELS 16
 #define AUDIO_EVT_COUNT    32
 #define AUDIO_FREQUENCY    32000
 
 static __declspec(align(16)) u8 audioHeap[AUDIO_HEAP_SIZE];
 static ALHeap audioHp;
 static ALGlobals audioGlobals;
+static ALCSPlayer cseqPlayer;
 
 int main() {
    load();
@@ -96,13 +98,27 @@ int main() {
    };
    alInit(&audioGlobals, &scfg);
 
-   ALCSeq seq = {};
-   alCSeqNew(&seq, seqFile.data());
+   ALSeqpConfig cscfg = {
+      .maxVoices = AUDIO_MAX_VOICES,
+      .maxEvents = AUDIO_EVT_COUNT,
+      .maxChannels = AUDIO_MAX_CHANNELS,
+      .debugFlags = 0, // disabled
+      .heap = &audioHp,
+      .initOsc = nullptr,
+      .updateOsc = nullptr,
+      .stopOsc = nullptr,
+   };
+   alCSPNew(&cseqPlayer, &cscfg);
+
+   ALCSeq cseq = {};
+   alCSeqNew(&cseq, seqFile.data());
+   alCSPSetSeq(&cseqPlayer, &cseq);
+
+  // alBnkfNew(nullptr, nullptr);
+
    run();
+
    unload();
-
-
-
    cout << "Hello World" << endl;
    return 0;
 }

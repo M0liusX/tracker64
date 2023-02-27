@@ -19,11 +19,17 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\Desktop\libultra2I\src\libultra\audio\synsetpriority.cpp" />
     <ClCompile Include="lib\libultra-audio\src\auxbus.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\bnkf.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\cents2ratio.cpp" />
     <ClCompile Include="lib\libultra-audio\src\copy.cpp" />
     <ClCompile Include="lib\libultra-audio\src\cseq.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\csplayer.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\cspsetseq.cpp" />
     <ClCompile Include="lib\libultra-audio\src\drvrNew.cpp" />
     <ClCompile Include="lib\libultra-audio\src\env.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\event.cpp" />
     <ClCompile Include="lib\libultra-audio\src\filter.cpp" />
     <ClCompile Include="lib\libultra-audio\src\heapalloc.cpp" />
     <ClCompile Include="lib\libultra-audio\src\load.cpp" />
@@ -31,9 +37,21 @@
     <ClCompile Include="lib\libultra-audio\src\resample.cpp" />
     <ClCompile Include="lib\libultra-audio\src\reverb.cpp" />
     <ClCompile Include="lib\libultra-audio\src\save.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\seq.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\seqplayer.cpp" />
     <ClCompile Include="lib\libultra-audio\src\sl.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\synaddplayer.cpp" />
     <ClCompile Include="lib\libultra-audio\src\synallocfx.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\synallocvoice.cpp" />
     <ClCompile Include="lib\libultra-audio\src\syndelete.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\synfreevoice.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\synsetfxmix.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\synsetpan.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\synsetpitch.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\synsetvol.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\synstartvoice.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\synstartvoiceparam.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\synstopvoice.cpp" />
     <ClCompile Include="lib\libultra-audio\src\synthesizer.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
