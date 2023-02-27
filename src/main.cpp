@@ -59,7 +59,7 @@ void audioDmaNew() {
 
 static __declspec(align(16)) u8 audioHeap[AUDIO_HEAP_SIZE];
 static ALHeap audioHp;
-static ALGlobals audio_globals;
+static ALGlobals audioGlobals;
 
 int main() {
    load();
@@ -67,12 +67,14 @@ int main() {
 
    u8* imem = static_cast<u8*>(getimem());
    u8* dmem = static_cast<u8*>(getdmem());
+   u8* rdram = static_cast<u8*>(getrdram());
    vector<u8> seqFile;
 
    loadbin("ucode/audio_data.zbin", dmem, 0);
    loadbin("ucode/audio.zbin", imem, 0x80);
    loadfile("samples/seq/rainbow.bin", seqFile);
    swapbytes(17, seqFile.data());
+   memcpy(rdram, seqFile.data(), seqFile.size()); // TODO: Verify accuracy of this line
 
    // TODO: http://en64.shoutwiki.com/wiki/Memory_map_detailed#Audio_Interface_.28AI.29_Registers
    // TODO: Audio Heap
@@ -80,6 +82,7 @@ int main() {
    audioHp.cur = audioHeap;
    audioHp.count = 0;
    audioHp.len = sizeof(audioHeap);
+   // alHeapInit(&audioHp, audioHeap, sizeof(audioHeap));
 
    s32 audioRate = 0x02E6D354 / (s32) (0x02E6D354 / (float)32000 - .5f);
    ALSynConfig scfg = {
@@ -91,6 +94,7 @@ int main() {
        .outputRate = audioRate,
        .fxType = AL_FX_SMALLROOM,
    };
+   alInit(&audioGlobals, &scfg);
 
    ALCSeq seq = {};
    alCSeqNew(&seq, seqFile.data());

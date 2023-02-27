@@ -51,5 +51,34 @@
     <ClCompile Include="lib\libultra-audio\src\resample.cpp">
       <Filter>libultra</Filter>
     </ClCompile>
+    <ClCompile Include="lib\libultra-audio\src\heapalloc.cpp">
+      <Filter>libultra</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\libultra-audio\src\env.cpp">
+      <Filter>libultra</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\libultra-audio\src\load.cpp">
+      <Filter>libultra</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\libultra-audio\src\reverb.cpp">
+      <Filter>libultra</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\libultra-audio\src\copy.cpp">
+      <Filter>libultra</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\libultra-audio\src\synallocfx.cpp">
+      <Filter>libultra</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="lib\libultra-audio\PR\os_internal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\libultra-audio\PR\os.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\libultra-audio\libaudio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

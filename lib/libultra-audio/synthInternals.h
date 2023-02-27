@@ -324,6 +324,7 @@ typedef struct PVoice_s {
 /*
  * prototypes for private driver functions
  */
+void            init_lpfilter(ALLowPass* lp); // Tracker64
 ALParam         *__allocParam(void);
 void            __freeParam(ALParam *param);
 void            _freePVoice(ALSynth *drvr, PVoice *pvoice);

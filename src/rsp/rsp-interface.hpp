@@ -8,5 +8,6 @@ auto run() -> void;
 
 auto getimem() -> void*;
 auto getdmem() -> void*;
+auto getrdram() -> void*;
 
 #endif

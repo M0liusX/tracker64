@@ -145,6 +145,9 @@
     <ClCompile Include="..\src\ares\memory\fixed-allocator.cpp" />
     <ClCompile Include="..\src\rsp\rsp.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\rsp\rsp-interface.hpp" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

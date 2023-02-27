@@ -361,7 +361,7 @@ alLoadParam(void *filter, s32 paramID, void *param)
             a->table = (ALWaveTable *) param;
             a->memin = (s32) a->table->base;
             a->sample = 0;
-            switch (a->table->type){
+            switch (a->table->type) {
                 case (AL_ADPCM_WAVE):
 
                     /*
@@ -411,28 +411,26 @@ alLoadParam(void *filter, s32 paramID, void *param)
             a->first   = 1;
             a->sample = 0;
 	    
-	    /* sct 2/14/96 - Check table since it is initialized to null and */
-	    /* Get loop info according to table type. */
-	    if (a->table)
-	    {
-		a->memin  = (s32) a->table->base;
-		if (a->table->type == AL_ADPCM_WAVE)
-		{
-		    if (a->table->waveInfo.adpcmWave.loop)
-			a->loop.count = a->table->waveInfo.adpcmWave.loop->count;
-		}
-		else if (a->table->type == AL_RAW16_WAVE)
-		{
-		    if (a->table->waveInfo.rawWave.loop)
-			a->loop.count = a->table->waveInfo.rawWave.loop->count;
-		}
-	    }
-	    
-            break;
-            
+	       /* sct 2/14/96 - Check table since it is initialized to null and */
+	       /* Get loop info according to table type. */
+	       if (a->table) {
+		      a->memin  = (s32) a->table->base;
+		      if (a->table->type == AL_ADPCM_WAVE)
+		      {
+		         if (a->table->waveInfo.adpcmWave.loop)
+			      a->loop.count = a->table->waveInfo.adpcmWave.loop->count;
+		      }
+		      else if (a->table->type == AL_RAW16_WAVE)
+		      {
+		         if (a->table->waveInfo.rawWave.loop)
+			      a->loop.count = a->table->waveInfo.rawWave.loop->count;
+		      }
+          }
+          break;  
         default:
-            break;
+          break;
     }
+    return 0;
 }
 
 Acmd *_decodeChunk(Acmd *ptr, ALLoadFilter *f, s32 tsam, s32 nbytes, s16 outp, s16 inp, u32 flags)

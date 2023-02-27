@@ -1,5 +1,6 @@
 #include "rsp-interface.hpp"
 #include <iostream>
+#include <cassert>
 using namespace ares::Nintendo64;
 
 auto load() -> void {
@@ -20,6 +21,14 @@ auto power(bool reset) -> void {
 auto run() -> void {
     rsp.clock = -256;
     while(rsp.clock < 0) rsp.main();
+
+    /* TODO: Investigate need for this? */
+    queue.step(256, [](u32 event) {
+       switch (event) {
+       case Queue::RSP_DMA:       return rsp.dmaTransferStep();
+       default: assert(false);    return;
+       }
+    });
 }
 
 auto getimem() -> void* {
@@ -28,4 +37,8 @@ auto getimem() -> void* {
 
 auto getdmem() -> void* {
    return rsp.getdmem();
+}
+
+auto getrdram() -> void* {
+   return rdram.ram.data;
 }

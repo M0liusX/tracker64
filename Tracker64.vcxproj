@@ -20,16 +20,27 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="lib\libultra-audio\src\auxbus.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\copy.cpp" />
     <ClCompile Include="lib\libultra-audio\src\cseq.cpp" />
     <ClCompile Include="lib\libultra-audio\src\drvrNew.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\env.cpp" />
     <ClCompile Include="lib\libultra-audio\src\filter.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\heapalloc.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\load.cpp" />
     <ClCompile Include="lib\libultra-audio\src\mainbus.cpp" />
     <ClCompile Include="lib\libultra-audio\src\resample.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\reverb.cpp" />
     <ClCompile Include="lib\libultra-audio\src\save.cpp" />
     <ClCompile Include="lib\libultra-audio\src\sl.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\synallocfx.cpp" />
     <ClCompile Include="lib\libultra-audio\src\syndelete.cpp" />
     <ClCompile Include="lib\libultra-audio\src\synthesizer.cpp" />
     <ClCompile Include="src\main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="lib\libultra-audio\libaudio.h" />
+    <ClInclude Include="lib\libultra-audio\PR\os.h" />
+    <ClInclude Include="lib\libultra-audio\PR\os_internal.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
