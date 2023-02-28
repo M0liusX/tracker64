@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\Desktop\libultra2I\src\libultra\audio\synsetpriority.cpp" />
     <ClCompile Include="lib\libultra-audio\src\auxbus.cpp" />
     <ClCompile Include="lib\libultra-audio\src\bnkf.cpp" />
     <ClCompile Include="lib\libultra-audio\src\cents2ratio.cpp" />
@@ -33,6 +32,7 @@
     <ClCompile Include="lib\libultra-audio\src\env.cpp" />
     <ClCompile Include="lib\libultra-audio\src\event.cpp" />
     <ClCompile Include="lib\libultra-audio\src\filter.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\getramobj.cpp" />
     <ClCompile Include="lib\libultra-audio\src\heapalloc.cpp" />
     <ClCompile Include="lib\libultra-audio\src\load.cpp" />
     <ClCompile Include="lib\libultra-audio\src\mainbus.cpp" />
@@ -50,6 +50,7 @@
     <ClCompile Include="lib\libultra-audio\src\synsetfxmix.cpp" />
     <ClCompile Include="lib\libultra-audio\src\synsetpan.cpp" />
     <ClCompile Include="lib\libultra-audio\src\synsetpitch.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\synsetpriority.cpp" />
     <ClCompile Include="lib\libultra-audio\src\synsetvol.cpp" />
     <ClCompile Include="lib\libultra-audio\src\synstartvoice.cpp" />
     <ClCompile Include="lib\libultra-audio\src\synstartvoiceparam.cpp" />

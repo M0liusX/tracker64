@@ -127,6 +127,11 @@ s32     alHeapCheck(ALHeap *hp);
 #endif
 
 /***********************************************************************
+ * Tracker64 Interface Stuff
+ ***********************************************************************/
+void* getRamObject(s32 offset);
+
+/***********************************************************************
  * FX Stuff
  ***********************************************************************/
 #define    AL_FX_NONE          0
@@ -187,19 +192,29 @@ typedef struct {
 } ALKeyMap;
 
 typedef struct {
-    ALADPCMloop *loop;
-    ALADPCMBook *book;
+private:
+    s32 loop;
+    s32 book;
+public:
+   ALADPCMloop* getLoop() { return (ALADPCMloop*) getRamObject(loop); }
+   ALADPCMBook* getBook() { return (ALADPCMBook*) getRamObject(book); }
+   s32* bookAddress() { return &book; }
+   s32* loopAddress() { return &loop; }
+
 } ALADPCMWaveInfo;
 
 typedef struct {
-    ALRawLoop *loop;
+private:
+    s32 loop;
+public:
+   ALRawLoop* getLoop() { return (ALRawLoop*)getRamObject(loop); }
 } ALRAWWaveInfo;
 
 typedef struct ALWaveTable_s {
-    u8          *base;          /* ptr to start of wave data    */
-    s32         len;            /* length of data in bytes      */
-    u8          type;           /* compression type             */
-    u8          flags;          /* offset/address flags         */
+    s32         base;          /* ptr to start of wave data    */
+    s32         len;           /* length of data in bytes      */
+    u8          type;          /* compression type             */
+    u8          flags;         /* offset/address flags         */
     union {
         ALADPCMWaveInfo adpcmWave;
         ALRAWWaveInfo   rawWave;
@@ -207,12 +222,21 @@ typedef struct ALWaveTable_s {
 } ALWaveTable;
 
 typedef struct ALSound_s {
-    ALEnvelope  *envelope;
-    ALKeyMap    *keyMap;
-    ALWaveTable *wavetable;     /* offset to wavetable struct           */
+private:
+    s32         envelope;
+    s32         keyMap;
+    s32         wavetable;     /* offset to wavetable struct     */
+public:
     ALPan       samplePan;
     u8          sampleVolume;
     u8          flags;
+public:
+   ALEnvelope* getEnvelope() { return (ALEnvelope*)getRamObject(envelope); }
+   s32* envelopeAddress() { return &envelope; }
+   ALKeyMap* getKeyMap() { return (ALKeyMap*)getRamObject(keyMap); }
+   s32* keymapAddress() { return &keyMap; }
+   ALWaveTable* getWaveTable() { return (ALWaveTable*)getRamObject(wavetable); }
+   s32* wavetableAddress() { return &wavetable; }
 } ALSound;
 
 typedef struct {
@@ -230,7 +254,11 @@ typedef struct {
     u8          vibDelay;       /* the delay for the tremelo osc        */
     s16         bendRange;      /* pitch bend range in cents            */
     s16         soundCount;     /* number of sounds in this array       */
-    ALSound     *soundArray[1];
+private:
+    s32         soundArray[1];
+public:
+   ALSound* getSound(s32 key) { return (ALSound*)getRamObject(soundArray[key]); }
+   s32* soundAddress(s32 key) { return &soundArray[key]; }
 } ALInstrument;
 
 typedef struct ALBank_s {
@@ -238,17 +266,27 @@ typedef struct ALBank_s {
     u8                  flags;
     u8                  pad;
     s32                 sampleRate;     /* e.g. 44100, 22050, etc...       */
-    ALInstrument        *percussion;    /* default percussion for GM       */
-    ALInstrument        *instArray[1];  /* ARRAY of instruments            */
+private:
+    s32                 percussion;    /* default percussion for GM       */
+    s32                 instArray[1];  /* ARRAY of instruments            */
+public:
+   ALInstrument* getPercussion() { return (ALInstrument*)getRamObject(percussion); }
+   s32* percussionAddress() { return &percussion; }
+   ALInstrument* getInstrument(s32 key) { return (ALInstrument*)getRamObject(instArray[key]); }
+   s32* instrumentAddress(s32 key) { return &instArray[key]; }
 } ALBank;
 
 typedef struct {                /* Note: sizeof won't be correct        */
     s16         revision;       /* format revision of this file         */
     s16         bankCount;      /* number of banks                      */
-    ALBank      *bankArray[1];  /* ARRAY of bank offsets                */
+private:
+   s32          bankArray[1];  /* ARRAY of bank offsets                */
+public:
+    ALBank* getBank(s32 key) { return (ALBank*)getRamObject(bankArray[key]); }
+    s32*    bankAddress(s32 key) { return &bankArray[key]; }
 } ALBankFile;
 
-void    alBnkfNew(ALBankFile *f, u8 *table);
+void    alBnkfNew(s32 ctlAddress, s32 tblAddress);
 
 /***********************************************************************
  * Sequence Files
@@ -365,6 +403,7 @@ void    alSynSetFXParam(ALSynth *s, ALFxRef fx, s16 paramID, void *param);
  ***********************************************************************/
 typedef struct {
     ALSynth     drvr;
+    void*       rdram;
 } ALGlobals;
 
 extern ALGlobals *alGlobals;

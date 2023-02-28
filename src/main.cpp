@@ -4,7 +4,7 @@
 using namespace std;
 
 #include <rsp-interface.hpp>
-#include <PR/libaudio.h>
+#include <libaudio.h>
 
 
 void loadbin(string path, uint8_t* mem, uint16_t offset)
@@ -86,7 +86,12 @@ int main() {
    loadfile("samples/ctl/soundbank1.ctl", ctlFile); // mp1 soundbank file
    loadfile("samples/tbl/wavetable1.tbl", tblFile); // mp1 wavetable file
    swapbytes(17, seqFile.data());
-   memcpy(rdram, seqFile.data(), seqFile.size()); // TODO: Verify accuracy of this line
+   s32 seqFileAddress = 0;
+   s32 ctlFileAddress = seqFile.size();
+   s32 tblFileAddress = ctlFileAddress + ctlFile.size();
+   memcpy(rdram + seqFileAddress, seqFile.data(), seqFile.size());
+   memcpy(rdram + ctlFileAddress, ctlFile.data(), ctlFile.size());
+   memcpy(rdram + tblFileAddress, tblFile.data(), tblFile.size());
 
    // TODO: http://en64.shoutwiki.com/wiki/Memory_map_detailed#Audio_Interface_.28AI.29_Registers
    // TODO: Audio Heap
@@ -107,6 +112,7 @@ int main() {
        .fxType = AL_FX_SMALLROOM,
    };
    alInit(&audioGlobals, &scfg);
+   audioGlobals.rdram = rdram;
 
    ALSeqpConfig cscfg = {
       .maxVoices = AUDIO_MAX_VOICES,
@@ -124,9 +130,11 @@ int main() {
    alCSeqNew(&cseq, seqFile.data());
    alCSPSetSeq(&cseqPlayer, &cseq);
 
-   //alBnkfNew((ALBankFile*) ctlFile.data(), tblFile.data()); // TODO, patch bank and wavetable for little endian?
-   //alCSPSetBank(&cseqPlayer, nullptr);
-   //alCSPPlay(&cseqPlayer);
+
+   ALBankFile* bankFile = (ALBankFile*)getRamObject(ctlFileAddress);
+   alBnkfNew(ctlFileAddress, tblFileAddress);
+   alCSPSetBank(&cseqPlayer, bankFile->getBank(0x20));
+   alCSPPlay(&cseqPlayer);
 
    // TODO: Loop?
    // s32 cmdLen = 0;

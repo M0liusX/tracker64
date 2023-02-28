@@ -470,13 +470,13 @@ static void __CSPHandleMIDIMsg(ALCSPlayer *seqp, ALEvent *event)
                 else
                     vstate->phase = AL_PHASE_NOTEON;
                 
-                cents = (key - sound->keyMap->keyBase) * 100
-                    + sound->keyMap->detune;
+                cents = (key - sound->getKeyMap()->keyBase) * 100
+                    + sound->getKeyMap()->detune;
                 
                 vstate->pitch = alCents2Ratio(cents);
-                vstate->envGain = sound->envelope->attackVolume;
+                vstate->envGain = sound->getEnvelope()->attackVolume;
                 vstate->envEndTime = seqp->curTime +
-                    sound->envelope->attackTime;
+                    sound->getEnvelope()->attackTime;
 
                 /*
                  * setup tremelo and vibrato if active
@@ -533,17 +533,17 @@ static void __CSPHandleMIDIMsg(ALCSPlayer *seqp, ALEvent *event)
                 fxmix = seqp->chanState[chan].fxmix;
                 pan   = __vsPan(vstate, (ALSeqPlayer*)seqp);
                 vol   = __vsVol(vstate, (ALSeqPlayer*)seqp);
-                deltaTime  = sound->envelope->attackTime;
+                deltaTime  = sound->getEnvelope()->attackTime;
                 
-                alSynStartVoiceParams(seqp->drvr, voice, sound->wavetable,
+                alSynStartVoiceParams(seqp->drvr, voice, sound->getWaveTable(),
                                       pitch, vol, pan, fxmix, deltaTime);
                 /*
                  * set up callbacks for envelope
                  */
                 evt.type          = AL_SEQP_ENV_EVT;
                 evt.msg.vol.voice = voice;
-                evt.msg.vol.vol   = sound->envelope->decayVolume;
-                evt.msg.vol.delta = sound->envelope->decayTime;
+                evt.msg.vol.vol   = sound->getEnvelope()->decayVolume;
+                evt.msg.vol.delta = sound->getEnvelope()->decayTime;
                                     
                 alEvtqPostEvent(&seqp->evtq, &evt, deltaTime);
 
@@ -582,7 +582,7 @@ static void __CSPHandleMIDIMsg(ALCSPlayer *seqp, ALEvent *event)
             {
                 vstate->phase = AL_PHASE_RELEASE;
                 __seqpReleaseVoice((ALSeqPlayer*)seqp, &vstate->voice,
-                              vstate->sound->envelope->releaseTime);
+                              vstate->sound->getEnvelope()->releaseTime);
             }
 
             break;
@@ -675,7 +675,7 @@ static void __CSPHandleMIDIMsg(ALCSPlayer *seqp, ALEvent *event)
                                     vs->phase = AL_PHASE_RELEASE;
                                     __seqpReleaseVoice((ALSeqPlayer*)seqp,
                                                        &vs->voice,
-                                                       vs->sound->envelope->releaseTime);
+                                                       vs->sound->getEnvelope()->releaseTime);
                                 }
                             }
                         }
@@ -712,7 +712,7 @@ static void __CSPHandleMIDIMsg(ALCSPlayer *seqp, ALEvent *event)
 
             if (key < seqp->bank->instCount)
             {
-                ALInstrument *inst = seqp->bank->instArray[key];
+                ALInstrument *inst = seqp->bank->getInstrument(key);
                 __setInstChanState((ALSeqPlayer*)seqp, inst, chan);	/* sct 11/6/95 */               
             }
             else

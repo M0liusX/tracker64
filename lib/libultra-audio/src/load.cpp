@@ -65,7 +65,7 @@ Acmd *alAdpcmPull(void *filter, s16 *outp, s32 outCount, s32 sampleOffset, Acmd 
 
     inp = AL_DECODER_IN;
     aLoadADPCM(ptr++, f->bookSize,
-               K0_TO_PHYS(f->table->waveInfo.adpcmWave.book->book));
+               K0_TO_PHYS(f->table->waveInfo.adpcmWave.getBook()->book));
 
     looped = (outCount + f->sample > f->loop.end) && (f->loop.count != 0);
     if (looped)
@@ -376,13 +376,13 @@ alLoadParam(void *filter, s32 paramID, void *param)
                     a->table->len = ADPCMFBYTES *
                         ((s32) (a->table->len/ADPCMFBYTES));
                     
-                    a->bookSize = 2*a->table->waveInfo.adpcmWave.book->order*
-                    a->table->waveInfo.adpcmWave.book->npredictors*ADPCMVSIZE;
-                    if (a->table->waveInfo.adpcmWave.loop) {
-                        a->loop.start = a->table->waveInfo.adpcmWave.loop->start;
-                        a->loop.end = a->table->waveInfo.adpcmWave.loop->end;
-                        a->loop.count = a->table->waveInfo.adpcmWave.loop->count;
-                        alCopy(a->table->waveInfo.adpcmWave.loop->state,
+                    a->bookSize = 2*a->table->waveInfo.adpcmWave.getBook()->order *
+                    a->table->waveInfo.adpcmWave.getBook()->npredictors * ADPCMVSIZE;
+                    if (a->table->waveInfo.adpcmWave.getLoop()) {
+                        a->loop.start = a->table->waveInfo.adpcmWave.getLoop()->start;
+                        a->loop.end = a->table->waveInfo.adpcmWave.getLoop()->end;
+                        a->loop.count = a->table->waveInfo.adpcmWave.getLoop()->count;
+                        alCopy(a->table->waveInfo.adpcmWave.getLoop()->state,
                                a->lstate, sizeof(ADPCM_STATE));
                     } else {
                         a->loop.start = a->loop.end = a->loop.count = 0;
@@ -391,10 +391,10 @@ alLoadParam(void *filter, s32 paramID, void *param)
                     
                 case (AL_RAW16_WAVE):
                     f->handler = alRaw16Pull;
-                    if (a->table->waveInfo.rawWave.loop) {
-                        a->loop.start = a->table->waveInfo.rawWave.loop->start;
-                        a->loop.end = a->table->waveInfo.rawWave.loop->end;
-                        a->loop.count = a->table->waveInfo.rawWave.loop->count;
+                    if (a->table->waveInfo.rawWave.getLoop()) {
+                        a->loop.start = a->table->waveInfo.rawWave.getLoop()->start;
+                        a->loop.end = a->table->waveInfo.rawWave.getLoop()->end;
+                        a->loop.count = a->table->waveInfo.rawWave.getLoop()->count;
                     } else {
                         a->loop.start = a->loop.end = a->loop.count = 0;
                     }
@@ -417,13 +417,13 @@ alLoadParam(void *filter, s32 paramID, void *param)
 		      a->memin  = (s32) a->table->base;
 		      if (a->table->type == AL_ADPCM_WAVE)
 		      {
-		         if (a->table->waveInfo.adpcmWave.loop)
-			      a->loop.count = a->table->waveInfo.adpcmWave.loop->count;
+		         if (a->table->waveInfo.adpcmWave.getLoop())
+			      a->loop.count = a->table->waveInfo.adpcmWave.getLoop()->count;
 		      }
 		      else if (a->table->type == AL_RAW16_WAVE)
 		      {
-		         if (a->table->waveInfo.rawWave.loop)
-			      a->loop.count = a->table->waveInfo.rawWave.loop->count;
+		         if (a->table->waveInfo.rawWave.getLoop())
+			      a->loop.count = a->table->waveInfo.rawWave.getLoop()->count;
 		      }
           }
           break;  

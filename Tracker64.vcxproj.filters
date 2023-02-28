@@ -87,9 +87,6 @@
     <ClCompile Include="lib\libultra-audio\src\synsetvol.cpp">
       <Filter>libultra</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Desktop\libultra2I\src\libultra\audio\synsetpriority.cpp">
-      <Filter>libultra</Filter>
-    </ClCompile>
     <ClCompile Include="lib\libultra-audio\src\synsetpan.cpp">
       <Filter>libultra</Filter>
     </ClCompile>
@@ -127,6 +124,12 @@
       <Filter>libultra</Filter>
     </ClCompile>
     <ClCompile Include="lib\libultra-audio\src\cspplay.cpp">
+      <Filter>libultra</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\libultra-audio\src\synsetpriority.cpp">
+      <Filter>libultra</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\libultra-audio\src\getramobj.cpp">
       <Filter>libultra</Filter>
     </ClCompile>
   </ItemGroup>
