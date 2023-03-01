@@ -31,6 +31,10 @@ auto run() -> void {
     });
 }
 
+auto halted() -> bool {
+   return rsp.status.halted == 1;
+}
+
 auto getimem() -> void* {
    return rsp.getimem();
 }

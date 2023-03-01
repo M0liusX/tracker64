@@ -48,7 +48,7 @@ void swapbytes(u8 count, u8* bytes) {
 }
 
 void audioDmaNew() {
-
+   cout << "Hello DMA!" << endl;
 }
 
 #define AUDIO_HEAP_SIZE    256 * 1024
@@ -80,7 +80,7 @@ int main() {
    vector<u8> ctlFile;
    vector<u8> tblFile;
 
-   loadbin("ucode/audio_data.zbin", dmem, 0); // rsp udata
+   loadbin("ucode/audio_data.zhbin", dmem, 0); // rsp udata
    loadbin("ucode/audio.zbin", imem, 0x80); // rsp ucode
    loadfile("samples/seq/rainbow.bin", seqFile); // mp1 mario board seq
    loadfile("samples/ctl/soundbank1.ctl", ctlFile); // mp1 soundbank file
@@ -89,6 +89,7 @@ int main() {
    s32 seqFileAddress = 0;
    s32 ctlFileAddress = seqFile.size();
    s32 tblFileAddress = ctlFileAddress + ctlFile.size();
+   s32 commandListAddress = tblFileAddress + tblFile.size();
    memcpy(rdram + seqFileAddress, seqFile.data(), seqFile.size());
    memcpy(rdram + ctlFileAddress, ctlFile.data(), ctlFile.size());
    memcpy(rdram + tblFileAddress, tblFile.data(), tblFile.size());
@@ -136,13 +137,21 @@ int main() {
    alCSPSetBank(&cseqPlayer, bankFile->getBank(0x20));
    alCSPPlay(&cseqPlayer);
 
-   // TODO: Loop?
-   // s32 cmdLen = 0;
-   // alAudioFrame(audioCmdList, &cmdLen, audioBuffers[0], AUDIO_BUFSZ);
-   //memcpy(); // TODO Write to rdram byteswapped cmdList.
-   //memcpy(); // TODO Write to 0xFC0 a 64 bit value containing 32 bit address of rdram location of cmdList
-   //memcpy(); // TODO Write to 0xFC4 a 64 bit value containing big endian length of rdram cmdList cmdLen * sizeof(Acmd)?
-   run(); // TODO: Figure out when to reset RSP state?
+   // TODO: Loop? (till break status?)
+   s32 cmdLen = 0;
+   alAudioFrame(audioCmdList, &cmdLen, audioBuffers[0], AUDIO_BUFSZ);
+   memcpy(rdram + commandListAddress, audioCmdList, cmdLen * sizeof(Acmd));
+
+   s32 data = 0;
+   data = commandListAddress;
+   memcpy(dmem + 0xFF0, &data, 4); // Write to DMEM address 0xFF0 the 32 bit address of rdram location of cmdList
+
+   data = cmdLen * sizeof(Acmd);
+   memcpy(dmem + 0xFF4, &data, 4); // Write to 0xFF4 a 64 length of rdram cmdList (cmdLen * sizeof(Acmd))
+
+   while (!halted()) {
+      run();
+   }
 
 
    unload();
