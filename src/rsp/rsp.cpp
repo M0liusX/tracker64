@@ -135,6 +135,12 @@ auto RSP::getdmem() -> void* {
    return dmem.data;
 }
 
+auto RSP::unhalt() -> void {
+   ipu.r[1].u32 = 0xFC0; // osTask start
+   ipu.pc = 0x80; // aspMain start
+   rsp.status.halted = 0;
+}
+
 }
 
 #include "rsp-interface.cpp"

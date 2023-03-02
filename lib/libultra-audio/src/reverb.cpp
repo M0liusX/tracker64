@@ -337,12 +337,12 @@ Acmd *_loadBuffer(ALFx *r, s16 *curr_ptr, s32 buff, s32 count, Acmd *p)
         before_end = delay_end - curr_ptr;
         
         aSetBuffer(ptr++, 0, buff, 0, before_end<<1);
-        aLoadBuffer(ptr++, (u32) curr_ptr); // Tracker64: aLoadBuffer(ptr++, osVirtualToPhysical(curr_ptr)); 
+        aLoadBuffer(ptr++, virtualToPhysical(curr_ptr)); // Tracker64: aLoadBuffer(ptr++, osVirtualToPhysical(curr_ptr)); 
         aSetBuffer(ptr++, 0, buff+(before_end<<1), 0, after_end<<1);
-        aLoadBuffer(ptr++, (u32) r->base); // Tracker64: aLoadBuffer(ptr++, osVirtualToPhysical(r->base));
+        aLoadBuffer(ptr++, virtualToPhysical(r->base)); // Tracker64: aLoadBuffer(ptr++, osVirtualToPhysical(r->base));
     } else {
         aSetBuffer(ptr++, 0, buff, 0, count<<1);
-        aLoadBuffer(ptr++, (u32)curr_ptr); // Tracker64: aLoadBuffer(ptr++, osVirtualToPhysical(curr_ptr)); 
+        aLoadBuffer(ptr++, virtualToPhysical(curr_ptr)); // Tracker64: aLoadBuffer(ptr++, osVirtualToPhysical(curr_ptr)); 
     }
 
     aSetBuffer(ptr++, 0, 0, 0, count<<1);
@@ -380,13 +380,13 @@ Acmd *_saveBuffer(ALFx *r, s16 *curr_ptr, s32 buff, s32 count, Acmd *p)
         before_end = delay_end - curr_ptr;
 
         aSetBuffer(ptr++, 0, 0, buff, before_end<<1);
-        aLoadBuffer(ptr++, (u32)curr_ptr); // Tracker64: aLoadBuffer(ptr++, osVirtualToPhysical(curr_ptr)); 
+        aLoadBuffer(ptr++, virtualToPhysical(curr_ptr)); // Tracker64: aLoadBuffer(ptr++, osVirtualToPhysical(curr_ptr)); 
         aSetBuffer(ptr++, 0, 0, buff+(before_end<<1), after_end<<1);
-        aLoadBuffer(ptr++, (u32) r->base); // Tracker64: aLoadBuffer(ptr++, osVirtualToPhysical(r->base));
+        aLoadBuffer(ptr++, virtualToPhysical(r->base)); // Tracker64: aLoadBuffer(ptr++, osVirtualToPhysical(r->base));
         aSetBuffer(ptr++, 0, 0, 0, count<<1);
     } else {
         aSetBuffer(ptr++, 0, 0, buff, count<<1);
-        aLoadBuffer(ptr++, (u32)curr_ptr); // Tracker64: aLoadBuffer(ptr++, osVirtualToPhysical(curr_ptr)); 
+        aLoadBuffer(ptr++, virtualToPhysical(curr_ptr)); // Tracker64: aLoadBuffer(ptr++, osVirtualToPhysical(curr_ptr)); 
     }
 
 #ifdef AUD_PROFILE
@@ -444,7 +444,3 @@ f32 _doModFunc(ALDelay *d, s32 count)
 
   return(d->rsgain * val);
 }
-
-
-
-

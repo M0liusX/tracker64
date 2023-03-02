@@ -1,6 +1,7 @@
 #include <iostream> 
 #include <fstream>
 #include <vector>
+#include <cassert>
 using namespace std;
 
 #include <rsp-interface.hpp>
@@ -57,7 +58,6 @@ void swapbytes(u8 count, u8* bytes) {
 #define AUDIO_BUFSZ        1024
 #define AUDIO_CLIST_SIZE   32 * 1024
 
-static __declspec(align(16)) u8 audioHeap[AUDIO_HEAP_SIZE];
 static ALHeap audioHp;
 static ALGlobals audioGlobals;
 static ALCSPlayer cseqPlayer;
@@ -99,17 +99,18 @@ int main() {
    s32 tblFileAddress = ctlFileAddress + ctlFile.size();
    s32 commandListAddress = tblFileAddress + tblFile.size();
    s32 audioBufferAddress = commandListAddress + AUDIO_CLIST_SIZE * sizeof(Acmd);
-
+   s32 audioHeapAddress = ((audioBufferAddress + 4 * AUDIO_BUFSZ) + 0xF) & (~0xF);
+   assert((AUDIO_HEAP_SIZE + audioHeapAddress) < 0x800000); // do not exceed 8MB ram size for now.
    memcpy(rdram + seqFileAddress, seqFile.data(), seqFile.size());
    memcpy(rdram + ctlFileAddress, ctlFile.data(), ctlFile.size());
    memcpy(rdram + tblFileAddress, tblFile.data(), tblFile.size());
 
    // TODO: http://en64.shoutwiki.com/wiki/Memory_map_detailed#Audio_Interface_.28AI.29_Registers
    // TODO: Audio Heap
-   audioHp.base = audioHeap;
-   audioHp.cur = audioHeap;
+   audioHp.base = rdram + audioHeapAddress;
+   audioHp.cur = rdram + audioHeapAddress;
    audioHp.count = 0;
-   audioHp.len = sizeof(audioHeap);
+   audioHp.len = AUDIO_HEAP_SIZE;
    // alHeapInit(&audioHp, audioHeap, sizeof(audioHeap));
 
    s32 audioRate = 0x02E6D354 / (s32) (0x02E6D354 / (float)32000 - .5f);
@@ -148,10 +149,19 @@ int main() {
    alCSPPlay(&cseqPlayer);
 
    while (true) {
-      // TODO: Loop? (till break status?)
+      // Clean DMEM?
+      //memset(dmem + 0x2E0, 0, 0x1000 - 0x2E0);
+
       s32 cmdLen = 0;
       alAudioFrame(audioCmdList, &cmdLen, (s16*) audioBufferAddress, AUDIO_BUFSZ);
-      memcpy(rdram + commandListAddress, audioCmdList, cmdLen * sizeof(Acmd));
+      for (int i = 0; i < cmdLen; i++) {
+         u32 command = audioCmdList[i].words.w0 >> 24;
+         //if (command == 0x8) {
+         //   assert((audioCmdList[i].words.w1 >> 16) < 0xFF0) ;
+         //}
+         //assert(command < 0x10);
+      }
+      memcpy(rdram + commandListAddress, audioCmdList, cmdLen * sizeof(Acmd)); // Write to DRAM the audio command list
 
       s32 data = 0;
       data = commandListAddress;
@@ -163,6 +173,7 @@ int main() {
       while (!halted()) {
          run();
       }
+      unhalt();
    }
 
    unload();

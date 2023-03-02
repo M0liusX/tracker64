@@ -5,7 +5,9 @@ auto load() -> void;
 auto unload() -> void;
 auto power(bool reset) -> void;
 auto run() -> void;
+
 auto halted() -> bool;
+auto unhalt() -> void;
 
 auto getimem() -> void*;
 auto getdmem() -> void*;

@@ -65,7 +65,7 @@ Acmd *alAdpcmPull(void *filter, s16 *outp, s32 outCount, s32 sampleOffset, Acmd 
 
     inp = AL_DECODER_IN;
     aLoadADPCM(ptr++, f->bookSize,
-               K0_TO_PHYS(f->table->waveInfo.adpcmWave.getBook()->book));
+               virtualToPhysical(f->table->waveInfo.adpcmWave.getBook()->book)); // Tracker64: K0_TO_PHYS
 
     looped = (outCount + f->sample > f->loop.end) && (f->loop.count != 0);
     if (looped)
@@ -455,16 +455,12 @@ Acmd *_decodeChunk(Acmd *ptr, ALLoadFilter *f, s32 tsam, s32 nbytes, s16 outp, s
         dramAlign = 0;
 
     if (flags & A_LOOP){
-        aSetLoop(ptr++, K0_TO_PHYS(f->lstate));
+        aSetLoop(ptr++, virtualToPhysical(f->lstate)); // Tracker64: K0_TO_PHYS
     }
     
     aSetBuffer(ptr++, 0, inp + dramAlign, outp, tsam<<1);
-    aADPCMdec(ptr++, flags, K0_TO_PHYS(f->state));
+    aADPCMdec(ptr++, flags, virtualToPhysical(f->state)); // Tracker64: K0_TO_PHYS
     f->first = 0;
 
     return ptr;
 }
-
-
-
-

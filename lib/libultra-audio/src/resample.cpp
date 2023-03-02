@@ -89,7 +89,7 @@ Acmd *alResamplePull(void *filter, s16 *outp, s32 outCnt, s32 sampleOffset, Acmd
 	 */
 	incr = (s32)(f->ratio * UNITY_PITCH);
 	aSetBuffer(ptr++, 0, inp, *outp, outCnt<<1);
-   aResample(ptr++, f->first, incr, (u32) f->state);  // Tracker64: aResample(ptr++, f->first, incr, osVirtualToPhysical(f->state));
+   aResample(ptr++, f->first, incr, virtualToPhysical(f->state));  // Tracker64: aResample(ptr++, f->first, incr, osVirtualToPhysical(f->state));
 	f->first = 0;
     }
     

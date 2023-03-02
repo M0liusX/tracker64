@@ -130,6 +130,7 @@ s32     alHeapCheck(ALHeap *hp);
  * Tracker64 Interface Stuff
  ***********************************************************************/
 void* getRamObject(s32 offset);
+u32 virtualToPhysical(void* virtualAddress);
 
 /***********************************************************************
  * FX Stuff

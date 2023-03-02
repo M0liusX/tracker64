@@ -35,6 +35,10 @@ auto halted() -> bool {
    return rsp.status.halted == 1;
 }
 
+auto reset() -> void {
+
+}
+
 auto getimem() -> void* {
    return rsp.getimem();
 }
@@ -45,4 +49,8 @@ auto getdmem() -> void* {
 
 auto getrdram() -> void* {
    return rdram.ram.data;
+}
+
+auto unhalt() -> void {
+   rsp.unhalt();
 }
