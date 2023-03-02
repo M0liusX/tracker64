@@ -47,27 +47,33 @@ void swapbytes(u8 count, u8* bytes) {
    }
 }
 
-void audioDmaNew() {
-   cout << "Hello DMA!" << endl;
-}
-
 #define AUDIO_HEAP_SIZE    256 * 1024
-#define AUDIO_MAX_VOICES   4
+#define AUDIO_MAX_VOICES   32
 #define AUDIO_MAX_UPDATES  64
 #define AUDIO_MAX_CHANNELS 16
 #define AUDIO_EVT_COUNT    32
 #define AUDIO_FREQUENCY    32000
 
 #define AUDIO_BUFSZ        1024
-#define AUDIO_CLIST_SIZE   4 * 1024
+#define AUDIO_CLIST_SIZE   32 * 1024
 
 static __declspec(align(16)) u8 audioHeap[AUDIO_HEAP_SIZE];
 static ALHeap audioHp;
 static ALGlobals audioGlobals;
 static ALCSPlayer cseqPlayer;
+static u8* rdram;
 
-static __declspec(align(16)) s16 audioBuffers[2][AUDIO_BUFSZ];
+// static __declspec(align(16)) s16 audioBuffers[2][AUDIO_BUFSZ];
 static Acmd audioCmdList[AUDIO_CLIST_SIZE];
+
+static s32 audioDmaCallback(s32 addr, s32 len, void* state) {
+   // cout << "Hello DMA!" << endl;
+   return addr;
+}
+
+static ALDMAproc audioNewDma(void* arg) {
+   return audioDmaCallback;
+}
 
 int main() {
    load();
@@ -75,21 +81,25 @@ int main() {
 
    u8* imem = static_cast<u8*>(getimem());
    u8* dmem = static_cast<u8*>(getdmem());
-   u8* rdram = static_cast<u8*>(getrdram());
+   rdram = static_cast<u8*>(getrdram());
+
    vector<u8> seqFile;
    vector<u8> ctlFile;
    vector<u8> tblFile;
 
-   loadbin("ucode/audio_data.zhbin", dmem, 0); // rsp udata
+   loadbin("ucode/audio_data.zbin", dmem, 0); // rsp udata
    loadbin("ucode/audio.zbin", imem, 0x80); // rsp ucode
    loadfile("samples/seq/rainbow.bin", seqFile); // mp1 mario board seq
    loadfile("samples/ctl/soundbank1.ctl", ctlFile); // mp1 soundbank file
    loadfile("samples/tbl/wavetable1.tbl", tblFile); // mp1 wavetable file
    swapbytes(17, seqFile.data());
+
    s32 seqFileAddress = 0;
    s32 ctlFileAddress = seqFile.size();
    s32 tblFileAddress = ctlFileAddress + ctlFile.size();
    s32 commandListAddress = tblFileAddress + tblFile.size();
+   s32 audioBufferAddress = commandListAddress + AUDIO_CLIST_SIZE * sizeof(Acmd);
+
    memcpy(rdram + seqFileAddress, seqFile.data(), seqFile.size());
    memcpy(rdram + ctlFileAddress, ctlFile.data(), ctlFile.size());
    memcpy(rdram + tblFileAddress, tblFile.data(), tblFile.size());
@@ -107,7 +117,7 @@ int main() {
        .maxVVoices = AUDIO_MAX_VOICES,
        .maxPVoices = AUDIO_MAX_VOICES,
        .maxUpdates = AUDIO_MAX_UPDATES,
-       .dmaproc = (void*) audioDmaNew, // explained later
+       .dmaproc = (void*) audioNewDma, // explained later
        .heap = &audioHp,
        .outputRate = audioRate,
        .fxType = AL_FX_SMALLROOM,
@@ -137,22 +147,23 @@ int main() {
    alCSPSetBank(&cseqPlayer, bankFile->getBank(0x20));
    alCSPPlay(&cseqPlayer);
 
-   // TODO: Loop? (till break status?)
-   s32 cmdLen = 0;
-   alAudioFrame(audioCmdList, &cmdLen, audioBuffers[0], AUDIO_BUFSZ);
-   memcpy(rdram + commandListAddress, audioCmdList, cmdLen * sizeof(Acmd));
+   while (true) {
+      // TODO: Loop? (till break status?)
+      s32 cmdLen = 0;
+      alAudioFrame(audioCmdList, &cmdLen, (s16*) audioBufferAddress, AUDIO_BUFSZ);
+      memcpy(rdram + commandListAddress, audioCmdList, cmdLen * sizeof(Acmd));
 
-   s32 data = 0;
-   data = commandListAddress;
-   memcpy(dmem + 0xFF0, &data, 4); // Write to DMEM address 0xFF0 the 32 bit address of rdram location of cmdList
+      s32 data = 0;
+      data = commandListAddress;
+      memcpy(dmem + 0xFF0, &data, 4); // Write to DMEM address 0xFF0 the 32 bit address of rdram location of cmdList
 
-   data = cmdLen * sizeof(Acmd);
-   memcpy(dmem + 0xFF4, &data, 4); // Write to 0xFF4 a 64 length of rdram cmdList (cmdLen * sizeof(Acmd))
+      data = cmdLen * sizeof(Acmd);
+      memcpy(dmem + 0xFF4, &data, 4); // Write to 0xFF4 a 64 length of rdram cmdList (cmdLen * sizeof(Acmd))
 
-   while (!halted()) {
-      run();
+      while (!halted()) {
+         run();
+      }
    }
-
 
    unload();
    cout << "Hello World" << endl;

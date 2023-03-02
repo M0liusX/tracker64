@@ -227,8 +227,7 @@ void alEnvmixerNew(ALEnvMixer *e, ALHeap *hp)
 
 void alLoadNew(ALLoadFilter *f, ALDMANew dmaNew, ALHeap *hp) 
 {
-    s32
-        i;
+    s32 i;
     
     /*
      * init filter superclass

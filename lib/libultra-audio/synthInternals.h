@@ -102,6 +102,10 @@ typedef struct ALParam_s {
         f32             f;
         s32             i;
     } yetstillmoredata;
+    union {
+       f32             f;
+       s32             i;
+    } tracker64data;
 } ALParam;
 
 typedef struct {
