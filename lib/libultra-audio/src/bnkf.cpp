@@ -170,6 +170,7 @@ void _bnkfPatchWaveTable(ALWaveTable *w, s32 offset, s32 table)
     w->flags = 1;
     
     swap32((u8*) &w->base);
+    swap32((u8*) &w->len);
     w->base += table;
 
     /* sct 2/14/96 - patch wavetable loop info based on type. */
@@ -184,9 +185,10 @@ void _bnkfPatchWaveTable(ALWaveTable *w, s32 offset, s32 table)
        ALADPCMBook* book = w->waveInfo.adpcmWave.getBook();
        swap32((u8*)&book->order);
        swap32((u8*)&book->npredictors);
-       for (u32 i = 0; i < book->order * book->npredictors * 8; i++) {
-          swap16((u8*)&book->book[i]);
-       }
+       // Tracker64: Verify this?
+       // for (u32 i = 0; i < book->order * book->npredictors * 8; i++) {
+       //   swap16((u8*)&book->book[i]);
+       //}
        if (*loopOffset) {
           *loopOffset += offset;
           ALADPCMloop* loop = w->waveInfo.adpcmWave.getLoop();

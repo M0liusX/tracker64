@@ -8,9 +8,7 @@ auto RSP::dmaTransferStart(void) -> void {
   }
 }
 
-static int counter3 = 0;
 auto RSP::dmaTransferStep() -> void {
-   counter3++;
   auto& region = !dma.current.pbusRegion ? dmem : imem;
 
   if(dma.busy.read) {

@@ -92,8 +92,8 @@ Acmd *alFxPull(void *filter, s16 *outp, s32 outCount, s32 sampleOffset,
 
     for (i = 0; i < r->section_count; i++) {
 	d  = &r->delay[i];  /* get the ALDelay structure */
-   in_ptr = &r->input[0] - 2 * d->input;  // Tracker64: in_ptr  = &r->input[-d->input];
-   out_ptr = &r->input[0] - 2 * d->output;  // Tracker64: out_ptr = &r->input[-d->output];
+   in_ptr = &r->input[0] - d->input;  // Tracker64: in_ptr  = &r->input[-d->input];
+   out_ptr = &r->input[0] - d->output;  // Tracker64: out_ptr = &r->input[-d->output];
 	
 	if (in_ptr == prev_out_ptr) {
 	    SWAP(buff1, buff2);
@@ -298,7 +298,7 @@ Acmd *_loadOutputBuffer(ALFx *r, ALDelay *d, s32 buff, s32 incount, Acmd *p)
         d->rs->first = 0; /* turn off first time flag */
         d->rsdelta += count - incount; /* add the number of samples to d->rsdelta */
     } else {
-        out_ptr = &r->input[0] - d->output * 2;  // Tracker64: [Weird undefined behaviour] out_ptr = &r->input[-d->output];
+        out_ptr = &r->input[0] - d->output;  // Tracker64: [Weird undefined behaviour] out_ptr = &r->input[-d->output];
         ptr = _loadBuffer(r, out_ptr, buff, incount, ptr);
     }
 

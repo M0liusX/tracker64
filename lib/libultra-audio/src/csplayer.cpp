@@ -231,9 +231,10 @@ static ALMicroTime __CSPVoiceHandler(void *node)
 	    {
 		for (vs = seqp->vAllocHead; vs != 0; vs = seqp->vAllocHead)
 		{
-/*#ifdef _DEBUG
-                    __osError(ERR_ALCSPVNOTFREE, 2, vs->channel, vs->key);
-#endif  */                  
+#ifdef _DEBUG
+         assert(false && "csplayer: ERR_ALCSPVNOTFREE");
+                    //__osError(ERR_ALCSPVNOTFREE, 2, vs->channel, vs->key);
+#endif  
 		    alSynStopVoice(seqp->drvr, &vs->voice);
 		    alSynFreeVoice(seqp->drvr, &vs->voice);
 		    if(vs->flags)
@@ -445,6 +446,7 @@ static void __CSPHandleMIDIMsg(ALCSPlayer *seqp, ALEvent *event)
 		    break;
 
                 sound = __lookupSoundQuick((ALSeqPlayer*)seqp, key, vel, chan);
+                assert(sound && "csplayer: ERR_ALSEQP_NO_SOUND");
     //            ALFlagFailIf(!sound, seqp->debugFlags & NO_SOUND_ERR_MASK,
 			 //ERR_ALSEQP_NO_SOUND); 
                 
@@ -453,6 +455,7 @@ static void __CSPHandleMIDIMsg(ALCSPlayer *seqp, ALEvent *event)
                 config.unityPitch = 0;
                 
                 vstate = __mapVoice((ALSeqPlayer*)seqp, key, vel, chan);
+                assert(vstate && "csplayer: ERR_ALSEQP_NO_VOICE");
     //            ALFlagFailIf(!vstate, seqp->debugFlags & NO_VOICE_ERR_MASK,
 			 //ERR_ALSEQP_NO_VOICE );
 
@@ -573,6 +576,7 @@ static void __CSPHandleMIDIMsg(ALCSPlayer *seqp, ALEvent *event)
 
         case (AL_MIDI_NoteOff):
             vstate = __lookupVoice((ALSeqPlayer*)seqp, key, chan);
+            assert(vstate && "csplayer: ERR_ALSEQP_OFF_VOICE");
        //     ALFlagFailIf(!vstate, seqp->debugFlags & NOTE_OFF_ERR_MASK,
 		     //ERR_ALSEQP_OFF_VOICE );
 
@@ -594,6 +598,7 @@ static void __CSPHandleMIDIMsg(ALCSPlayer *seqp, ALEvent *event)
              * sounding.
              */
             vstate = __lookupVoice((ALSeqPlayer*)seqp, key, chan);
+            assert(vstate && "csplayer: ERR_ALSEQP_POLY_VOICE");
             //ALFailIf(!vstate,  ERR_ALSEQP_POLY_VOICE );
 
             vstate->velocity = byte2;
@@ -717,9 +722,10 @@ static void __CSPHandleMIDIMsg(ALCSPlayer *seqp, ALEvent *event)
             }
             else
             {
-/*#ifdef _DEBUG
-                __osError(ERR_ALSEQPINVALIDPROG, 2, key, seqp->bank->instCount);
-#endif */               
+#ifdef _DEBUG
+                assert(false && "csplayer: ERR_ALSEQPINVALIDPROG");
+                // __osError(ERR_ALSEQPINVALIDPROG, 2, key, seqp->bank->instCount);
+#endif                
             }
             break;            
         case (AL_MIDI_PitchBendChange):
@@ -747,6 +753,7 @@ static void __CSPHandleMIDIMsg(ALCSPlayer *seqp, ALEvent *event)
             break;
             
         default:
+           assert(false && "csplayer: ERR_ALSEQPUNKNOWNMIDI");
 //#ifdef _DEBUG
 //            __osError(ERR_ALSEQPUNKNOWNMIDI, 1, status);
 //#endif

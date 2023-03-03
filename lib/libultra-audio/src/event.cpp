@@ -19,6 +19,7 @@
  *====================================================================*/
 
 #include <libaudio.h>
+#include <cassert>
 //#include <os_internal.h>
 //#include <ultraerror.h>
 
@@ -86,7 +87,8 @@ void alEvtqPostEvent(ALEventQueue *evtq, ALEvent *evt, ALMicroTime delta)
 /*        osSetIntMask(mask);
 #ifdef _DEBUG
         __osError(ERR_ALEVENTNOFREE, 0);
-#endif   */     
+#endif   */
+        assert(false && "event: ERR_ALEVENTNOFREE");
         return;
     }
     
@@ -267,7 +269,3 @@ MidiStatus2Str (char status, char *str)
 }
 
 #endif /* _DEBUG_INTERNAL */
-
-
-
-

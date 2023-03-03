@@ -21,6 +21,7 @@
 #include <libaudio.h>
 #include <PR/os_internal.h>
 // #include <ultraerror.h>
+#include <cassert>
 #include "cseq.h"
 
 
@@ -67,11 +68,12 @@ void alCSeqNextEvent(ALCSeq *seq,ALEvent *evt)
     u32     firstTrack;
     u32     lastTicks = seq->lastDeltaTicks;
 
-//#ifdef _DEBUG
+#ifdef _DEBUG
 //    /* sct 1/17/96 - Warn if we are beyond the end of sequence. */
 //    if (!seq->validTracks)
 //	__osError(ERR_ALSEQOVERRUN, 0);
-//#endif
+    assert(seq->validTracks && "cseq: we are beyond the end of a sequence");
+#endif
     
 
     for(i = 0; i < 16 ; i++)
@@ -199,10 +201,13 @@ static u32 __alCSeqGetTrackEvent(ALCSeq *seq, u32 track, ALEvent *event)
             event->type = AL_CSP_LOOPEND;
         }
 
-//#ifdef _DEBUG        
+#ifdef _DEBUG      
+        else {
+           assert(false && "cseq: invalid meta");
+        }
 //        else
 //            __osError(ERR_ALSEQMETA, 1, type);
-//#endif
+#endif
         
     }
     else
@@ -216,10 +221,11 @@ static u32 __alCSeqGetTrackEvent(ALCSeq *seq, u32 track, ALEvent *event)
         }
         else     /* running status */
         {
-//#ifdef _DEBUG
+#ifdef _DEBUG
+        assert(seq->lastStatus[track] && "cseq: ERR_ALCSEQZEROSTATUS");
 //            if(seq->lastStatus[track] == 0)
 //                __osError(ERR_ALCSEQZEROSTATUS, 1, track);
-//#endif
+#endif
             event->msg.midi.status = seq->lastStatus[track];
             event->msg.midi.byte1 = status;
         }
@@ -231,10 +237,11 @@ static u32 __alCSeqGetTrackEvent(ALCSeq *seq, u32 track, ALEvent *event)
             if((event->msg.midi.status & 0xf0) == AL_MIDI_NoteOn)
             {
                 event->msg.midi.duration = __readVarLen(seq,track);
-/*#ifdef _DEBUG                
-                if(event->msg.midi.byte2 == 0)
-                    __osError( ERR_ALCSEQZEROVEL, 1, track);
-#endif  */              
+#ifdef _DEBUG
+            assert(event->msg.midi.byte2 && "cseq: ERR_ALCSEQZEROVEL");
+                /*if(event->msg.midi.byte2 == 0)
+                    __osError( ERR_ALCSEQZEROVEL, 1, track);*/
+#endif                
             }
         }
         else
@@ -405,14 +412,3 @@ static u32 __readVarLen(ALCSeq *seq,u32 track)
     }
     return (value);
 }
-
-
-
-
-
-
-
-
-
-
-
