@@ -195,9 +195,10 @@ void _bnkfPatchWaveTable(ALWaveTable *w, s32 offset, s32 table)
           swap32((u8*)&loop->start);
           swap32((u8*)&loop->end);
           swap32((u8*)&loop->count);
-          for (u32 i = 0; i < 16; i++) {
-             swap16((u8*)&loop->state[i]);
-          }
+          // Tracker64: Verify this?
+          //for (u32 i = 0; i < 16; i++) {
+          //   swap16((u8*)&loop->state[i]);
+          //}
        }
  
     }

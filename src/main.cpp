@@ -148,19 +148,14 @@ int main() {
    alCSPSetBank(&cseqPlayer, bankFile->getBank(0x20));
    alCSPPlay(&cseqPlayer);
 
+   ofstream outfile("mono.sw", ofstream::binary);
+
    while (true) {
       // Clean DMEM?
-      //memset(dmem + 0x2E0, 0, 0x1000 - 0x2E0);
+      memset(dmem + 0x2E0, 0, 0x1000 - 0x2E0);
 
       s32 cmdLen = 0;
       alAudioFrame(audioCmdList, &cmdLen, (s16*) audioBufferAddress, AUDIO_BUFSZ);
-      for (int i = 0; i < cmdLen; i++) {
-         u32 command = audioCmdList[i].words.w0 >> 24;
-         //if (command == 0x8) {
-         //   assert((audioCmdList[i].words.w1 >> 16) < 0xFF0) ;
-         //}
-         //assert(command < 0x10);
-      }
       memcpy(rdram + commandListAddress, audioCmdList, cmdLen * sizeof(Acmd)); // Write to DRAM the audio command list
 
       s32 data = 0;
@@ -174,8 +169,17 @@ int main() {
          run();
       }
       unhalt();
+      
+      /* Deinterleave and mono. */
+      u8 intermediate[AUDIO_BUFSZ * 2];
+      u8* output = (rdram + audioBufferAddress);
+      for (u32 i = 0; i < AUDIO_BUFSZ; i++) {
+         intermediate[i*2] = output[i * 4];
+         intermediate[i*2 + 1] = output[i * 4 + 1];
+      }
+      outfile.write((char*)intermediate, AUDIO_BUFSZ * 2);
    }
-
+   outfile.close();
    unload();
    cout << "Hello World" << endl;
    return 0;

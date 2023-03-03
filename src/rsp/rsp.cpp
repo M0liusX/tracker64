@@ -136,9 +136,31 @@ auto RSP::getdmem() -> void* {
 }
 
 auto RSP::unhalt() -> void {
-   ipu.r[1].u32 = 0xFC0; // osTask start
-   ipu.pc = 0x80; // aspMain start
-   rsp.status.halted = 0;
+  pipeline = {};
+  dma = {};
+  status.semaphore = 0;
+  status.halted = 0;
+  status.broken = 0;
+  status.full = 0;
+  status.singleStep = 0;
+  status.interruptOnBreak = 0;
+  for(auto& signal : status.signal) signal = 0;
+  for(auto& r : ipu.r) r.u32 = 0;
+  ipu.r[1].u32 = 0xFC0; // osTask start
+  ipu.pc = 0x80; // aspMain start
+  branch = {};
+  for(auto& r : vpu.r) r.u128 = 0;
+  vpu.acch.u128 = 0;
+  vpu.accm.u128 = 0;
+  vpu.accl.u128 = 0;
+  vpu.vcoh.u128 = 0;
+  vpu.vcol.u128 = 0;
+  vpu.vcch.u128 = 0;
+  vpu.vccl.u128 = 0;
+  vpu.vce.u128 = 0;
+  vpu.divin = 0;
+  vpu.divout = 0;
+  vpu.divdp = 0;
 }
 
 }
