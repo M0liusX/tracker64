@@ -293,7 +293,7 @@ Acmd *_loadOutputBuffer(ALFx *r, ALDelay *d, s32 buff, s32 incount, Acmd *p)
         ratio = (s32)(fratio * UNITY_PITCH);
         /* set the buffers, and do the resample */
         aSetBuffer(ptr++, 0, rbuff + (ramalign<<1), buff, incount<<1);
-        aResample(ptr++, d->rs->first, ratio, (u32) (d->rs->state)); // Tracker64: aResample(ptr++, d->rs->first, ratio, osVirtualToPhysical(d->rs->state));
+        aResample(ptr++, d->rs->first, ratio, virtualToPhysical(d->rs->state)); // Tracker64: aResample(ptr++, d->rs->first, ratio, osVirtualToPhysical(d->rs->state));
       
         d->rs->first = 0; /* turn off first time flag */
         d->rsdelta += count - incount; /* add the number of samples to d->rsdelta */
@@ -401,8 +401,8 @@ Acmd *_filterBuffer(ALLowPass *lp, s32 buff, s32 count, Acmd *p)
     Acmd	*ptr = p;
 
     aSetBuffer(ptr++, 0, buff, buff, count<<1);
-    aLoadADPCM(ptr++, 32, (u32) (lp->fcvec.fccoef)); // Tracker64: aLoadADPCM(ptr++, 32, osVirtualToPhysical(lp->fcvec.fccoef));
-    aPoleFilter(ptr++, lp->first, lp->fgain, (u32) (lp->fstate)); // Tracker64: PoleFilter(ptr++, lp->first, lp->fgain, osVirtualToPhysical(lp->fstate));
+    aLoadADPCM(ptr++, 32, virtualToPhysical(lp->fcvec.fccoef)); // Tracker64: aLoadADPCM(ptr++, 32, osVirtualToPhysical(lp->fcvec.fccoef));
+    aPoleFilter(ptr++, lp->first, lp->fgain, virtualToPhysical(lp->fstate)); // Tracker64: PoleFilter(ptr++, lp->first, lp->fgain, osVirtualToPhysical(lp->fstate));
     lp->first = 0;
 
     return ptr;

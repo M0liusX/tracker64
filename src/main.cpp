@@ -89,16 +89,16 @@ int main() {
 
    loadbin("ucode/audio_data.zbin", dmem, 0); // rsp udata
    loadbin("ucode/audio.zbin", imem, 0x80); // rsp ucode
-   loadfile("samples/seq/rainbow.bin", seqFile); // mp1 mario board seq
+   loadfile("samples/seq/twobeeps.bin", seqFile); // mp1 mario board seq
    loadfile("samples/ctl/soundbank1.ctl", ctlFile); // mp1 soundbank file
    loadfile("samples/tbl/wavetable1.tbl", tblFile); // mp1 wavetable file
    swapbytes(17, seqFile.data());
 
    s32 seqFileAddress = 0;
    s32 ctlFileAddress = seqFile.size();
-   s32 tblFileAddress = ctlFileAddress + ctlFile.size();
+   s32 tblFileAddress = ((ctlFileAddress + ctlFile.size()) + 0xF) & (~0xF);
    s32 commandListAddress = tblFileAddress + tblFile.size();
-   s32 audioBufferAddress = commandListAddress + AUDIO_CLIST_SIZE * sizeof(Acmd);
+   s32 audioBufferAddress = ((commandListAddress + AUDIO_CLIST_SIZE * sizeof(Acmd)) + 0xF) & (~0xF);
    s32 audioHeapAddress = ((audioBufferAddress + 4 * AUDIO_BUFSZ) + 0xF) & (~0xF);
    assert((AUDIO_HEAP_SIZE + audioHeapAddress) < 0x800000); // do not exceed 8MB ram size for now.
    memcpy(rdram + seqFileAddress, seqFile.data(), seqFile.size());
@@ -113,7 +113,7 @@ int main() {
    audioHp.len = AUDIO_HEAP_SIZE;
    // alHeapInit(&audioHp, audioHeap, sizeof(audioHeap));
 
-   s32 audioRate = 0x02E6D354 / (s32) (0x02E6D354 / (float)32000 - .5f);
+   s32 audioRate = 0x02E6D354 / (s32) (0x02E6D354 / (f32)32000.0 - .5f);
    ALSynConfig scfg = {
        .maxVVoices = AUDIO_MAX_VOICES,
        .maxPVoices = AUDIO_MAX_VOICES,
@@ -121,7 +121,7 @@ int main() {
        .dmaproc = (void*) audioNewDma, // explained later
        .heap = &audioHp,
        .outputRate = audioRate,
-       .fxType = AL_FX_SMALLROOM,
+       .fxType = AL_FX_NONE,
    };
    alInit(&audioGlobals, &scfg);
    audioGlobals.rdram = rdram;
@@ -145,7 +145,7 @@ int main() {
 
    ALBankFile* bankFile = (ALBankFile*)getRamObject(ctlFileAddress);
    alBnkfNew(ctlFileAddress, tblFileAddress);
-   alCSPSetBank(&cseqPlayer, bankFile->getBank(0x20));
+   alCSPSetBank(&cseqPlayer, bankFile->getBank(0x0));
    alCSPPlay(&cseqPlayer);
 
    ofstream outfile("mono.sw", ofstream::binary);

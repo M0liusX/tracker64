@@ -59,7 +59,7 @@ void alCSeqNew(ALCSeq *seq, u8 *ptr)
     }
 
     seq->qnpt = 1.0/(f32)seq->base->division;
-    seq->validTracks = 1; // Force one track
+    // seq->validTracks = 1 << 4; // Force one track
 }
 
 void alCSeqNextEvent(ALCSeq *seq,ALEvent *evt)
