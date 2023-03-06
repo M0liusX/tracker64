@@ -268,7 +268,7 @@ Acmd *_loadOutputBuffer(ALFx *r, ALDelay *d, s32 buff, s32 incount, Acmd *p)
          * negative of that as an index into the delay buffer. loadBuffer that uses this
          * value then bumps it up if it is below the  delay buffer.
          */ 
-        out_ptr = &r->input[-(d->output - d->rsdelta)]; // Tracker64: TODO
+        out_ptr = &r->input[0] - (d->output - d->rsdelta); // Tracker64: TODO
         ramalign = ((s32)out_ptr & 0x7) >> 1; /* calculate the number of samples needed 
                                                to align the buffer*/
 #ifdef _DEBUG
@@ -380,13 +380,13 @@ Acmd *_saveBuffer(ALFx *r, s16 *curr_ptr, s32 buff, s32 count, Acmd *p)
         before_end = delay_end - curr_ptr;
 
         aSetBuffer(ptr++, 0, 0, buff, before_end<<1);
-        aLoadBuffer(ptr++, virtualToPhysical(curr_ptr)); // Tracker64: aLoadBuffer(ptr++, osVirtualToPhysical(curr_ptr)); 
+        aSaveBuffer(ptr++, virtualToPhysical(curr_ptr)); // Tracker64: aLoadBuffer(ptr++, osVirtualToPhysical(curr_ptr)); 
         aSetBuffer(ptr++, 0, 0, buff+(before_end<<1), after_end<<1);
-        aLoadBuffer(ptr++, virtualToPhysical(r->base)); // Tracker64: aLoadBuffer(ptr++, osVirtualToPhysical(r->base));
+        aSaveBuffer(ptr++, virtualToPhysical(r->base)); // Tracker64: aLoadBuffer(ptr++, osVirtualToPhysical(r->base));
         aSetBuffer(ptr++, 0, 0, 0, count<<1);
     } else {
         aSetBuffer(ptr++, 0, 0, buff, count<<1);
-        aLoadBuffer(ptr++, virtualToPhysical(curr_ptr)); // Tracker64: aLoadBuffer(ptr++, osVirtualToPhysical(curr_ptr)); 
+        aSaveBuffer(ptr++, virtualToPhysical(curr_ptr)); // Tracker64: aLoadBuffer(ptr++, osVirtualToPhysical(curr_ptr)); 
     }
 
 #ifdef AUD_PROFILE

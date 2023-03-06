@@ -209,6 +209,7 @@ private:
     s32 loop;
 public:
    ALRawLoop* getLoop() { return (ALRawLoop*)getRamObject(loop); }
+   s32* loopAddress() { return &loop; }
 } ALRAWWaveInfo;
 
 typedef struct ALWaveTable_s {

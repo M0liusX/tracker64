@@ -378,7 +378,7 @@ alLoadParam(void *filter, s32 paramID, void *param)
                     
                     a->bookSize = 2*a->table->waveInfo.adpcmWave.getBook()->order *
                     a->table->waveInfo.adpcmWave.getBook()->npredictors * ADPCMVSIZE;
-                    if (a->table->waveInfo.adpcmWave.getLoop()) {
+                    if (*a->table->waveInfo.adpcmWave.loopAddress()) {
                         a->loop.start = a->table->waveInfo.adpcmWave.getLoop()->start;
                         a->loop.end = a->table->waveInfo.adpcmWave.getLoop()->end;
                         a->loop.count = a->table->waveInfo.adpcmWave.getLoop()->count;
@@ -391,7 +391,7 @@ alLoadParam(void *filter, s32 paramID, void *param)
                     
                 case (AL_RAW16_WAVE):
                     f->handler = alRaw16Pull;
-                    if (a->table->waveInfo.rawWave.getLoop()) {
+                    if (*a->table->waveInfo.rawWave.loopAddress()) {
                         a->loop.start = a->table->waveInfo.rawWave.getLoop()->start;
                         a->loop.end = a->table->waveInfo.rawWave.getLoop()->end;
                         a->loop.count = a->table->waveInfo.rawWave.getLoop()->count;
@@ -417,13 +417,13 @@ alLoadParam(void *filter, s32 paramID, void *param)
 		      a->memin  = (s32) a->table->base;
 		      if (a->table->type == AL_ADPCM_WAVE)
 		      {
-		         if (a->table->waveInfo.adpcmWave.getLoop())
-			      a->loop.count = a->table->waveInfo.adpcmWave.getLoop()->count;
+		         if (*a->table->waveInfo.adpcmWave.loopAddress())
+			         a->loop.count = a->table->waveInfo.adpcmWave.getLoop()->count;
 		      }
 		      else if (a->table->type == AL_RAW16_WAVE)
 		      {
-		         if (a->table->waveInfo.rawWave.getLoop())
-			      a->loop.count = a->table->waveInfo.rawWave.getLoop()->count;
+		         if (*a->table->waveInfo.rawWave.loopAddress())
+			         a->loop.count = a->table->waveInfo.rawWave.getLoop()->count;
 		      }
           }
           break;  
