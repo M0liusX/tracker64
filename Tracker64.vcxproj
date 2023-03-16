@@ -62,6 +62,8 @@
     <ClInclude Include="lib\libultra-audio\libaudio.h" />
     <ClInclude Include="lib\libultra-audio\PR\os.h" />
     <ClInclude Include="lib\libultra-audio\PR\os_internal.h" />
+    <ClInclude Include="src\audio\MeAudio.hpp" />
+    <ClInclude Include="src\audio\miniaudio.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

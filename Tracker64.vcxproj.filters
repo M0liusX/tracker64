@@ -16,6 +16,9 @@
     <Filter Include="libultra">
       <UniqueIdentifier>{0f72bf07-a0cf-4f8d-a949-03b39872afa1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="audio">
+      <UniqueIdentifier>{2b2d26dd-ba88-4d4a-9145-de8008a028a5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -142,6 +145,12 @@
     </ClInclude>
     <ClInclude Include="lib\libultra-audio\libaudio.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\audio\MeAudio.hpp">
+      <Filter>audio</Filter>
+    </ClInclude>
+    <ClInclude Include="src\audio\miniaudio.h">
+      <Filter>audio</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

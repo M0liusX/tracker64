@@ -14,6 +14,6 @@ void* getRamObject(s32 address) {
 
 u32 virtualToPhysical(void *virtualLoc) {
    s64 physicalLoc = (s64) virtualLoc - (s64) alGlobals->rdram;
-   assert((physicalLoc > 0) && (physicalLoc < 0x800000)); // from 0 to 8Mb-1 address
+   assert((physicalLoc > 0) && (physicalLoc < 0x1000000)); // from 0 to 16Mb-1 address
    return physicalLoc;
 }

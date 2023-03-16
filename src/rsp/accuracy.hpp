@@ -1,6 +1,8 @@
+#include "intrinsics.h"
+
 struct Accuracy {
   //enable all accuracy flags
-  static constexpr bool Reference = true;
+  static constexpr bool Reference = false;
 
   // struct CPU {
   //   static constexpr bool Interpreter = 0 | Reference;
@@ -15,8 +17,8 @@ struct Accuracy {
     static constexpr bool Recompiler = !Interpreter;
 
     //VU instructions
-    static constexpr bool SISD = true;//0 | Reference | !ARCHITECTURE_SUPPORTS_SSE4_1;
-    static constexpr bool SIMD = false;//!SISD;
+    static constexpr bool SISD = 0 | Reference | !ARCHITECTURE_SUPPORTS_SSE4_1;
+    static constexpr bool SIMD = !SISD;
   };
 
   struct RDRAM {

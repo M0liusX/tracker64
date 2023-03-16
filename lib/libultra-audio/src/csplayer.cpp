@@ -446,6 +446,7 @@ static void __CSPHandleMIDIMsg(ALCSPlayer *seqp, ALEvent *event)
 		    break;
 
                 sound = __lookupSoundQuick((ALSeqPlayer*)seqp, key, vel, chan);
+                if (!sound) return;
                 assert(sound && "csplayer: ERR_ALSEQP_NO_SOUND");
     //            ALFlagFailIf(!sound, seqp->debugFlags & NO_SOUND_ERR_MASK,
 			 //ERR_ALSEQP_NO_SOUND); 

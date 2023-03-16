@@ -13,7 +13,7 @@ auto RDRAM::load() -> void {
 
   //4_MiB internal
   //4_MiB expansion pak
-  ram.allocate(4_MiB + 4_MiB);
+  ram.allocate(4_MiB + 4_MiB + 4_MiB + 4_MiB);
 
   // debugger.load(node);
 }

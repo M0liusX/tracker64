@@ -186,9 +186,9 @@ void _bnkfPatchWaveTable(ALWaveTable *w, s32 offset, s32 table)
        swap32((u8*)&book->order);
        swap32((u8*)&book->npredictors);
        // Tracker64: Verify this?
-       // for (u32 i = 0; i < book->order * book->npredictors * 8; i++) {
-       //   swap16((u8*)&book->book[i]);
-       //}
+       for (u32 i = 0; i < book->order * book->npredictors * 4; i++) {
+          swap32((u8*)&book->book[i * 2]);
+       }
        if (*loopOffset) {
           *loopOffset += offset;
           ALADPCMloop* loop = w->waveInfo.adpcmWave.getLoop();
@@ -196,9 +196,9 @@ void _bnkfPatchWaveTable(ALWaveTable *w, s32 offset, s32 table)
           swap32((u8*)&loop->end);
           swap32((u8*)&loop->count);
           // Tracker64: Verify this?
-          //for (u32 i = 0; i < 16; i++) {
-          //   swap16((u8*)&loop->state[i]);
-          //}
+          for (u32 i = 0; i < 8; i++) {
+             swap32((u8*)&loop->state[i * 2]);
+          }
        }
  
     }
