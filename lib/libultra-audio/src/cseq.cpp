@@ -392,9 +392,6 @@ static u32 __readVarLen(ALCSeq *seq,u32 track)
 {
     u32 value;
     u32 c;
-#ifdef _LITTLE
-    u8 order = 0;
-#endif
 
     value = (u32)__getTrackByte(seq,track);
     if ( value & 0x00000080 )
@@ -402,13 +399,8 @@ static u32 __readVarLen(ALCSeq *seq,u32 track)
         value &= 0x7f;
         do
         {
-#ifdef _LITTLE
-           c = (u32)__getTrackByte(seq, track);
-           value = value + ((c & 0x7f) << (++order * 7));
-#else
            c = (u32)__getTrackByte(seq, track);
            value = (value << 7) + (c & 0x7f);
-#endif
         } while (c & 0x80);
     }
     return (value);
