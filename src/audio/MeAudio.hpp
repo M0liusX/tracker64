@@ -9,18 +9,20 @@
 #define DEVICE_SAMPLE_RATE  32000
 #define BUFFER_SIZE 2048
 #define STREAM_SIZE 32000
-#define DELAY 640
+#define DELAY 320
 #include <iostream>
 #include <array>
+#include <atomic>
 
 namespace me {
 
+/* Circular Buffer Audio Implementation. */
 struct AudioBuffer {
    short samples[BUFFER_SIZE] = { 0 };
    std::array<short, STREAM_SIZE> stream = { 0 };
-   uint32_t count = 0;
+   std::atomic<uint32_t> count = 0; // updated by application in PushToStream
+   std::atomic<uint32_t> tail = 0; // updated by application in PushToStream
    uint32_t head = 0;
-   uint32_t tail = 0;
 };
 
 class MeAudio {
@@ -62,7 +64,7 @@ public:
       return buffer.count >> 1;
    }
    void SetDelayBuffer() {
-      if (buffer.count < (DELAY/2)) {
+      if (buffer.count < (DELAY)) {
          buffer.tail = (buffer.tail + DELAY) % STREAM_SIZE;
          buffer.count += DELAY;
       }

@@ -96,13 +96,13 @@ int main() {
 
    loadbin("ucode/audio_data.zbin", dmem, 0); // rsp udata
    loadbin("ucode/audio.zbin", imem, 0x80); // rsp ucode
-   loadfile("samples/seq/rainbow.bin", seqFile); // mp1 mario board seq
+   loadfile("samples/seq/rainbowexport.bin", seqFile); // mp1 mario board seq
    loadfile("samples/ctl/soundbank1.ctl", ctlFile); // mp1 soundbank file
    loadfile("samples/tbl/wavetable1.ztbl", tblFile); // mp1 wavetable file
    swapbytes(17, seqFile.data());
 
    s32 seqFileAddress = 0;
-   s32 ctlFileAddress = seqFile.size();
+   s32 ctlFileAddress = (seqFile.size() + 0xF) & (~0xF);
    s32 tblFileAddress = ((ctlFileAddress + ctlFile.size()) + 0xF) & (~0xF);
    s32 commandListAddress = tblFileAddress + tblFile.size();
    s32 audioBufferAddress = ((commandListAddress + AUDIO_CLIST_SIZE * sizeof(Acmd)) + 0xF) & (~0xF);
@@ -125,7 +125,7 @@ int main() {
        .dmaproc = (void*) audioNewDma, // explained later
        .heap = &audioHp,
        .outputRate = audioRate,
-       .fxType = AL_FX_CHORUS,
+       .fxType = AL_FX_SMALLROOM,
    };
    alInit(&audioGlobals, &scfg);
    audioGlobals.rdram = rdram;
@@ -181,16 +181,19 @@ int main() {
       timePassed = clock() - startTime;
       std::cout << timePassed << std::endl;
 
-      //int count = audio->GetAudioBufferCount();
-      //while (count >= 1024) {
-      //   audio->SetDelayBuffer();
-      //   count = audio->GetAudioBufferCount();
+      /* Generate required audio */
+      int count = audio->GetAudioBufferCount();
+      while (count >= 320) { // ~ 10ms second delay.
+         // audio->SetDelayBuffer(); // not needed in this strategy?
+         count = audio->GetAudioBufferCount();
+      }
+
+      /* Generate audio parallel to real-time. */
+      //while (timePassed < 16) {
+      //   audio->SetDelayBuffer(); // in case of desync.
+      //   timePassed = clock() - startTime;
       //}
 
-      while (timePassed < 16) {
-         audio->SetDelayBuffer();
-         timePassed = clock() - startTime;
-      }
       /* Deinterleave and mono. */
       //u8 intermediate[AUDIO_BUFSZ * 2];
       //if (x > 2) {
