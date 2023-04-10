@@ -64,6 +64,10 @@ namespace me {
          while (swapChain.buffers[swapChain.audioThreadyBufferId].ready) {}
       }
 
+      bool NeedsAudio() {
+         return !swapChain.buffers[swapChain.audioThreadyBufferId].ready;
+      }
+
       short* GetAudioBuffer()
       {
          return swapChain.buffers[swapChain.audioThreadyBufferId].stream.data();

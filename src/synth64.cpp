@@ -84,6 +84,20 @@ static s32 seqFileAddress, ctlFileAddress, tblFileAddress, commandListAddress, a
 static ALCSeq cseq = {};
 static ALSeqpConfig cscfg;
 static ALSynConfig scfg;
+static ALCSeqMarker start = {};
+
+void stop() {
+   alCSPStop(&cseqPlayer);
+   alCSeqSetLoc(&cseq, &start);
+}
+
+void play() {
+   alCSPPlay(&cseqPlayer);
+}
+
+void pause() {
+   alCSPStop(&cseqPlayer);
+}
 
 void init() {
    audio = new me::MeAudio;
@@ -156,18 +170,20 @@ void init() {
    alCSeqNew(&cseq, rdram + seqFileAddress);
    alCSPSetSeq(&cseqPlayer, &cseq);
 
-
    ALBankFile* bankFile = (ALBankFile*)getRamObject(ctlFileAddress);
    alBnkfNew(ctlFileAddress, tblFileAddress);
    alCSPSetBank(&cseqPlayer, bankFile->getBank(0x1B));
-   alCSPPlay(&cseqPlayer);
+   alCSeqGetLoc(&cseq, &start);
 }
 
 int mainloop() {
    // std::ofstream outfile("rainbow.sw", std::ofstream::binary);
    // while (true) {
       /* Generate required audio */
-      audio->AudioWait();
+      if (!audio->NeedsAudio()) {
+         return 0;
+      }
+      // audio->AudioWait();
 
       clock_t startTime = clock(); // Start timer
       clock_t timePassed = startTime;

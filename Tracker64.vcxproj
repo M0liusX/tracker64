@@ -35,6 +35,7 @@
     <ClCompile Include="lib\libultra-audio\src\cspplay.cpp" />
     <ClCompile Include="lib\libultra-audio\src\cspsetbank.cpp" />
     <ClCompile Include="lib\libultra-audio\src\cspsetseq.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\cspstop.cpp" />
     <ClCompile Include="lib\libultra-audio\src\drvrNew.cpp" />
     <ClCompile Include="lib\libultra-audio\src\env.cpp" />
     <ClCompile Include="lib\libultra-audio\src\event.cpp" />

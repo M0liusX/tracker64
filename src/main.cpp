@@ -363,7 +363,7 @@ int main(int, char**)
 
     // Create window with Vulkan context
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+Vulkan example", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "Tracker64", NULL, NULL);
     if (!glfwVulkanSupported())
     {
         printf("GLFW: Vulkan Not Supported\n");
@@ -474,6 +474,7 @@ int main(int, char**)
     // Our state
     bool show_demo_window = true;
     bool show_another_window = false;
+    bool show_tracks = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     /* Init Synth */
@@ -490,6 +491,7 @@ int main(int, char**)
         glfwPollEvents();
 
         // Main Loop
+        static bool playing = false;
         mainloop();
 
         // Resize swap chain?
@@ -525,12 +527,26 @@ int main(int, char**)
             ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
             ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
             ImGui::Checkbox("Another Window", &show_another_window);
+            ImGui::Checkbox("Tracks", &show_tracks);
 
             ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
             ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
             if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
                 counter++;
+            if (ImGui::Button("Play|Pause")) {                      // Buttons return true when clicked (most widgets return true when edited/activated)
+               playing = !playing;
+               if (playing)
+                  play();
+               else
+                  pause();
+
+            }
+            if (ImGui::Button("Stop")) {
+               stop();
+               playing = false;
+            }
+
             ImGui::SameLine();
             ImGui::Text("counter = %d", counter);
 
@@ -546,6 +562,74 @@ int main(int, char**)
             if (ImGui::Button("Close Me"))
                 show_another_window = false;
             ImGui::End();
+        }
+
+        // static char testinput[64 * 50 * 3] = { 0 };
+        // static char testinput2[64] = { "aaaaaaaa" };
+        static int hoveredCol = 0;
+        static int hoveredRow = 0;
+        static int hoveredSubCol = 0;
+        static int selected = 0;
+        if (show_tracks)
+        {
+           ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+           ImGui::Text("Tracks");
+           // ImGui::InputText("test", testinput2, IM_ARRAYSIZE(testinput2));
+           /* Table */
+           static ImGuiTableFlags flags = 0;
+           ImGui::AlignTextToFramePadding();
+           ImGui::BeginTable("tracks", 3, flags);
+           ImGui::TableSetupColumn("One");
+           ImGui::TableSetupColumn("Two");
+           ImGui::TableSetupColumn("Three");
+           ImGui::TableHeadersRow();
+           int i = 0;
+           for (int row = 0; row < 50; row++)
+           {
+              ImGui::TableNextRow();
+              for (int column = 0; column < 3; column++)
+              {
+                 // char* columnbuf = &testinput[0] + 64 * (50 * column + row);
+                 ImGui::TableSetColumnIndex(column);
+                 // ImGui::InputText("password", columnbuf, 64, ImGuiInputTextFlags_Password);
+                 // Demonstrate keeping auto focus on the input box
+                 //if (ImGui::IsItemHovered() || (!ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
+                 //   ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
+                 // ImGui::SameLine();
+                 ImGui::Text("--- ");
+                 if (ImGui::IsItemHovered() || ImGui::IsItemActive()) {
+                    hoveredCol = column;
+                    hoveredRow = row;
+                    hoveredSubCol = 0;
+                 }
+                 ImGui::SameLine();
+                 ImGui::Text("-- ");
+                 if (ImGui::IsItemHovered() || ImGui::IsItemActive()) {
+                    hoveredCol = column;
+                    hoveredRow = row;
+                    hoveredSubCol = 1;
+                 }
+                 ImGui::SameLine();
+                 //ImGui::Text("-- ");
+                 ImGui::Text("%d-%d-%d", hoveredCol, hoveredRow, hoveredSubCol);
+                 ImGui::SameLine();
+                 ImGui::Text("---");
+                 if (ImGui::IsItemHovered() || ImGui::IsItemActive()) {
+                    hoveredCol = column;
+                    hoveredRow = row;
+                    hoveredSubCol = 2;
+                 }
+
+                 //if (ImGui::Selectable(buffer, selected == i)) {
+                 //   selected = i;
+                 //}
+                 i++;
+              }
+           }
+
+
+           ImGui::EndTable();
+           ImGui::End();
         }
 
         // Rendering
