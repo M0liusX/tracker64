@@ -1,0 +1,2 @@
+int mainloop();
+void init();
