@@ -206,5 +206,8 @@
     <ClInclude Include="src\synth64.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="lib\imgui\imfilebrowser.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

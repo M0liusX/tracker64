@@ -12,8 +12,10 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
+#include "imfilebrowser.h"
 #include <stdio.h>          // printf, fprintf
 #include <stdlib.h>         // abort
+#include <iostream>
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -471,14 +473,20 @@ int main(int, char**)
         ImGui_ImplVulkan_DestroyFontUploadObjects();
     }
 
+    // create a file browser instance
+    ImGui::FileBrowser fileDialog;
+    fileDialog.SetTitle("title");
+
     // Our state
-    bool show_demo_window = true;
+    bool show_demo_window = false;
     bool show_another_window = false;
     bool show_tracks = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    int bankNumber = 0;
 
     /* Init Synth */
-    init();
+    startaudiothread();
+    // init("C:\\Users\\mam19\\Documents\\GIT\\tracker64\\samples\\seq\\intopipe.bin", 0x1B);
 
     // Main loop
     while (!glfwWindowShouldClose(window))
@@ -524,45 +532,65 @@ int main(int, char**)
 
             ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
 
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+            //ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
             ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
-            ImGui::Checkbox("Tracks", &show_tracks);
-
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+            //ImGui::Checkbox("Another Window", &show_another_window);
             ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            if (ImGui::Button("Play|Pause")) {                      // Buttons return true when clicked (most widgets return true when edited/activated)
-               playing = !playing;
-               if (playing)
-                  play();
-               else
-                  pause();
-
-            }
-            if (ImGui::Button("Stop")) {
-               stop();
-               playing = false;
-            }
-
+            ImGui::Checkbox("Tracks", &show_tracks);
+            // open file dialog when user clicks this button
+            if (ImGui::Button("Open Sequence"))
+               fileDialog.Open();
             ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
+            ImGui::Text("| Bank: ");
+            ImGui::SameLine();
+            ImGui::SliderInt("##int", &bankNumber, 0x00, 0xFF, "0x%02X");
+
+            //if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+                //counter++;
+            //ImGui::SameLine();
+            //ImGui::Text("counter = %d", counter);
+            
+            /* Playback Controls */
+            {
+               if (ImGui::Button("Play|Pause")) {                      // Buttons return true when clicked (most widgets return true when edited/activated)
+                  playing = !playing;
+                  if (playing)
+                     play();
+                  else
+                     pause();
+
+               }
+               ImGui::SameLine();
+               if (ImGui::Button("Stop")) {
+                  stop();
+                  playing = false;
+               }
+            }
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
             ImGui::End();
+
+            /* File Dialog Epiouge */
+            fileDialog.Display();
+            if (fileDialog.HasSelected())
+            {
+               std::cout << "Selected filename" << fileDialog.GetSelected().string() << std::endl;
+               init(fileDialog.GetSelected().string(), bankNumber);
+               playing = false;
+               fileDialog.ClearSelected();
+            }
         }
 
         // 3. Show another simple window.
-        if (show_another_window)
-        {
-            ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another window!");
-            if (ImGui::Button("Close Me"))
-                show_another_window = false;
-            ImGui::End();
-        }
+        //if (show_another_window)
+        //{
+        //    ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+        //    ImGui::Text("Hello from another window!");
+        //    if (ImGui::Button("Close Me"))
+        //        show_another_window = false;
+        //    ImGui::End();
+        //}
 
         // static char testinput[64 * 50 * 3] = { 0 };
         // static char testinput2[64] = { "aaaaaaaa" };

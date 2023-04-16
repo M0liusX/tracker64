@@ -69,6 +69,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lib\imgui\imconfig.h" />
+    <ClInclude Include="lib\imgui\imfilebrowser.h" />
     <ClInclude Include="lib\imgui\imgui.h" />
     <ClInclude Include="lib\imgui\imgui_impl_glfw.h" />
     <ClInclude Include="lib\imgui\imgui_impl_vulkan.h" />
