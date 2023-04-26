@@ -20,6 +20,12 @@
 
 #include <libaudio.h>
 #include <cassert>
+#include <set>
+
+std::set<ALEnvelope*> envFlags;
+std::set<ALADPCMBook*> bookFlags;
+std::set<ALADPCMloop*> loopFlags;
+
 //#include <os_internal.h>
 //#include <ultraerror.h>
 
@@ -73,6 +79,11 @@ void alBnkfNew(s32 ctlAddress, s32 tblAddress)
      */
     //ALFailIf(file->revision != AL_BANK_VERSION, ERR_ALBNKFNEW);
     
+    /* Reset Flags */
+    envFlags.clear();
+    bookFlags.clear();
+    loopFlags.clear();
+
     /*
      * patch the file so that offsets are pointers
      */
@@ -109,10 +120,11 @@ void _bnkfPatchBank(ALBank *bank, s32 offset, s32 table)
     
     for (i = 0; i < bank->instCount; i++) {
         s32* instOffset = bank->instrumentAddress(i);
-        if(*instOffset)
-            swap32((u8*)instOffset);
-            *instOffset += offset;
-            _bnkfPatchInst(bank->getInstrument(i), offset, table);
+        if (*instOffset) {
+           swap32((u8*)instOffset);
+           *instOffset += offset;
+           _bnkfPatchInst(bank->getInstrument(i), offset, table);
+        }
     }
 }
 
@@ -155,10 +167,30 @@ void _bnkfPatchSound(ALSound *s, s32 offset, s32 table)
     *wavetableOffset += offset;
 
     ALEnvelope* envelope = s->getEnvelope();
-    swap32((u8*) &envelope->attackTime);
-    swap32((u8*) &envelope->decayTime);
-    swap32((u8*) &envelope->releaseTime);
-
+    if (envFlags.find(envelope) == envFlags.end()) {
+      swap32((u8*) &envelope->attackTime);
+      swap32((u8*) &envelope->decayTime);
+      swap32((u8*) &envelope->releaseTime);
+      if (envelope->attackTime < (s32) 0x0) {
+         #ifdef _DEBUG
+         assert(false && "Invalid attackTime!");
+         #endif
+         envelope->attackTime = 0x00000000;
+      }
+      if (envelope->decayTime < (s32)0x0) {
+         #ifdef _DEBUG
+         assert(false && "Invalid decayTime!");
+         #endif
+         envelope->decayTime = 0x00000000;
+      }
+      if (envelope->releaseTime < (s32)0x0) {
+         #ifdef _DEBUG
+         assert(false && "Invalid releaseTime!");
+         #endif
+         envelope->releaseTime = 0x00000000;
+      }
+        envFlags.insert(envelope);
+    }
     _bnkfPatchWaveTable(s->getWaveTable(), offset, table);
 }
 
@@ -183,27 +215,40 @@ void _bnkfPatchWaveTable(ALWaveTable *w, s32 offset, s32 table)
        *bookOffset += offset;
 
        ALADPCMBook* book = w->waveInfo.adpcmWave.getBook();
-       swap32((u8*)&book->order);
-       swap32((u8*)&book->npredictors);
-       // Tracker64: Verify this?
-       for (u32 i = 0; i < book->order * book->npredictors * 4; i++) {
-          swap32((u8*)&book->book[i * 2]);
+       if (bookFlags.find(book) == bookFlags.end()) {
+          swap32((u8*)&book->order);
+          swap32((u8*)&book->npredictors);
+          for (u32 i = 0; i < book->order * book->npredictors * 4; i++) {
+             swap32((u8*)&book->book[i * 2]);
+          }
+          bookFlags.insert(book);
        }
+
        if (*loopOffset) {
           *loopOffset += offset;
           ALADPCMloop* loop = w->waveInfo.adpcmWave.getLoop();
-          swap32((u8*)&loop->start);
-          swap32((u8*)&loop->end);
-          swap32((u8*)&loop->count);
-          // Tracker64: Verify this?
-          for (u32 i = 0; i < 8; i++) {
-             swap32((u8*)&loop->state[i * 2]);
+          if (loopFlags.find(loop) == loopFlags.end()) {
+             swap32((u8*)&loop->start);
+             swap32((u8*)&loop->end);
+             swap32((u8*)&loop->count);
+             for (u32 i = 0; i < 8; i++) {
+                swap32((u8*)&loop->state[i * 2]);
+             }
+             loopFlags.insert(loop);
           }
        }
  
     }
     else if (w->type == AL_RAW16_WAVE)
     {
-       assert(false);
+       s32* loopOffset = w->waveInfo.rawWave.loopAddress();
+       swap32((u8*)loopOffset);
+       if (*loopOffset) {
+          *loopOffset += offset;
+          ALRawLoop* loop = w->waveInfo.rawWave.getLoop();
+          swap32((u8*)&loop->start);
+          swap32((u8*)&loop->end);
+          swap32((u8*)&loop->count);
+       }
     }
 }

@@ -84,11 +84,12 @@ void alEvtqPostEvent(ALEventQueue *evtq, ALEvent *evt, ALMicroTime delta)
 
     item = (ALEventListItem *)evtq->freeList.next;
     if (!item) {
-/*        osSetIntMask(mask);
 #ifdef _DEBUG
+/*        osSetIntMask(mask);
         __osError(ERR_ALEVENTNOFREE, 0);
-#endif   */
+ */
         assert(false && "event: ERR_ALEVENTNOFREE");
+#endif
         return;
     }
     

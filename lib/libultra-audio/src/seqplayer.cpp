@@ -755,9 +755,10 @@ void __handleMIDIMsg(ALSeqPlayer *seqp, ALEvent *event)
             break;
             
         default:
-//#ifdef _DEBUG
+#ifdef _DEBUG
+            assert(false);
 //	    __osError(ERR_ALSEQPUNKNOWNMIDI, 1, status);
-//#endif
+#endif
 	    break;
     }        
 }
@@ -984,16 +985,16 @@ void __seqpReleaseVoice(ALSeqPlayer *seqp, ALVoice *voice,
 
 	thisNode = seqp->evtq.allocList.next;
 	while( thisNode != 0 ) {
-	    nextNode = thisNode->next;
+        nextNode = thisNode->next;
 	    thisItem = (ALEventListItem *)thisNode;
 	    nextItem = (ALEventListItem *)nextNode;
 	    if (thisItem->evt.type == AL_SEQP_ENV_EVT) {
-		if(thisItem->evt.msg.vol.voice == voice) {
-		    if( nextItem )
-			nextItem->delta += thisItem->delta;
-		    alUnlink(thisNode);
-		    alLink(thisNode, &seqp->evtq.freeList);
-		}
+		    if(thisItem->evt.msg.vol.voice == voice) {
+		        if( nextItem )
+			      nextItem->delta += thisItem->delta;
+		        alUnlink(thisNode);
+		        alLink(thisNode, &seqp->evtq.freeList);
+		    }
 	    }
 	    thisNode = nextNode;
 	}

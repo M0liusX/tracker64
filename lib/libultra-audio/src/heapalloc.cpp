@@ -22,6 +22,7 @@
 #include <libaudio.h>
 //#include <PR/os_internal.h>
 //#include <ultraerror.h>
+#include <cassert>
 
 void *alHeapDBAlloc(u8 *file, s32 line, ALHeap *hp, s32 num, s32 size)
 {
@@ -56,9 +57,10 @@ void *alHeapDBAlloc(u8 *file, s32 line, ALHeap *hp, s32 num, s32 size)
 //#endif
 
     } else {
-/*#ifdef _DEBUG
-        __osError(ERR_ALHEAPNOFREE, 1, size);
-#endif  */      
+#ifdef _DEBUG
+        /* __osError(ERR_ALHEAPNOFREE, 1, size); */
+        assert(false && "ran out of audio heap!");
+#endif      
     }
 
     return ptr;
