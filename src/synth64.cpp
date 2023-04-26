@@ -53,7 +53,7 @@ void swapbytes(u8 count, u8* bytes) {
    }
 }
 
-#define AUDIO_HEAP_SIZE    256 * 1024
+#define AUDIO_HEAP_SIZE    2048 * 1024
 #define AUDIO_MAX_VOICES   32
 #define AUDIO_MAX_UPDATES  64
 #define AUDIO_MAX_CHANNELS 16
@@ -131,8 +131,8 @@ void init(std::string seqPath, int bank) {
    loadbin("ucode/audio_data.zbin", dmem, 0); // rsp udata
    loadbin("ucode/audio.zbin", imem, 0x80); // rsp ucode
    loadfile(seqPath, seqFile); // mp1 mario board seq
-   loadfile("samples/ctl/soundbank1.ctl", ctlFile); // mp1 soundbank file
-   loadfile("samples/tbl/wavetable1.ztbl", tblFile); // mp1 wavetable file
+   loadfile("samples/ctl/smash1.ctl", ctlFile); // mp1 soundbank file
+   loadfile("samples/tbl/smash1.ztbl", tblFile); // mp1 wavetable file
    swapbytes(17, seqFile.data());
 
    seqFileAddress = 0;
@@ -152,7 +152,7 @@ void init(std::string seqPath, int bank) {
    audioHp.count = 0;
    audioHp.len = AUDIO_HEAP_SIZE;
 
-   s32 audioRate = 0x02E6D354 / (s32)(0x02E6D354 / (f32)32000.0 - .5f);
+   s32 audioRate = 0x02E6D354 / (s32)(0x02E6D354 / (f32)AUDIO_FREQUENCY - .5f);
    scfg = {
        .maxVVoices = AUDIO_MAX_VOICES,
        .maxPVoices = AUDIO_MAX_VOICES,
@@ -160,7 +160,7 @@ void init(std::string seqPath, int bank) {
        .dmaproc = (void*)audioNewDma, // explained later
        .heap = &audioHp,
        .outputRate = audioRate,
-       .fxType = AL_FX_SMALLROOM,
+       .fxType = AL_FX_BIGROOM,
    };
    audioGlobals = {};
    alInit(&audioGlobals, &scfg);
@@ -194,36 +194,34 @@ int mainloop() {
    /* Skip loop if uninitialized synth */
    if (!initialized) { return 0; }
    /* Generate required audio */
-   if (!audio->NeedsAudio()) { return 0; }
+   while (audio->NeedsAudio()) {
+      /* Generate and write to DRAM the audio command list */
+      s32 cmdLen = 0;
+      alAudioFrame(audioCmdList, &cmdLen, (s16*)audioBufferAddress, AUDIO_BUFSZ);
+      memcpy(rdram + commandListAddress, audioCmdList, cmdLen * sizeof(Acmd));
 
+      /* Write to DMEM address 0xFF0 the 32 bit address of rdram location of cmdList */
+      s32 data = 0;
+      data = commandListAddress;
+      memcpy(dmem + 0xFF0, &data, 4);
 
-   /* Generate and write to DRAM the audio command list */ 
-   s32 cmdLen = 0;
-   alAudioFrame(audioCmdList, &cmdLen, (s16*) audioBufferAddress, AUDIO_BUFSZ);
-   memcpy(rdram + commandListAddress, audioCmdList, cmdLen * sizeof(Acmd));
+      /* Write to 0xFF4 a 64 length of rdram cmdList (cmdLen * sizeof(Acmd)) */
+      data = cmdLen * sizeof(Acmd);
+      memcpy(dmem + 0xFF4, &data, 4);
 
-   /* Write to DMEM address 0xFF0 the 32 bit address of rdram location of cmdList */
-   s32 data = 0;
-   data = commandListAddress;
-   memcpy(dmem + 0xFF0, &data, 4); 
+      /* Loop through rsp ucode until halt is reached. */
+      while (!halted()) { run(); }
+      unhalt();
 
-   /* Write to 0xFF4 a 64 length of rdram cmdList (cmdLen * sizeof(Acmd)) */
-   data = cmdLen * sizeof(Acmd);
-   memcpy(dmem + 0xFF4, &data, 4);
+      /* Push generated samples to stream */
+      u8* output = (rdram + audioBufferAddress);
+      memcpy(audio->GetAudioBuffer(), output, AUDIO_BUFSZ * sizeof(s16) * DEVICE_CHANNELS);
+      audio->PushToStream();
 
-   /* Loop through rsp ucode until halt is reached. */
-   while (!halted()) { run(); }
-   unhalt();
-
-   /* Push generated samples to stream */
-   u8* output = (rdram + audioBufferAddress);
-   memcpy(audio->GetAudioBuffer(), output, AUDIO_BUFSZ * sizeof(s16) * DEVICE_CHANNELS);
-   audio->PushToStream();
-
-   /* TODO: Missing unloading rsp. */
-   // outfile.close();
-   // unload();
-
+      /* TODO: Missing unloading rsp. */
+      // outfile.close();
+      // unload();
+   }
    return 0;
 }
 
