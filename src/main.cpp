@@ -427,22 +427,6 @@ int main(int, char**)
     init_info.CheckVkResultFn = check_vk_result;
     ImGui_ImplVulkan_Init(&init_info, wd->RenderPass);
 
-    // Load Fonts
-    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-    // - If the file cannot be loaded, the function will return NULL. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-    // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-    // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
-    // - Read 'docs/FONTS.md' for more instructions and details.
-    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-    //io.Fonts->AddFontDefault();
-    //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-    //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
-    //IM_ASSERT(font != NULL);
-
     // Upload Fonts
     {
         // Use any command queue
@@ -478,15 +462,21 @@ int main(int, char**)
     fileDialog.SetTitle("title");
 
     // Our state
+    enum PlaybackState { NOT_READY, LOAD_READY, PLAYBACK_READY };
+    PlaybackState currState = NOT_READY;
+
+    enum FileLoader { NONE, BANK, WAVES, SEQ };
+    FileLoader currLoader = NONE;
+
     bool show_demo_window = false;
-    bool show_another_window = false;
-    bool show_tracks = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     int bankNumber = 0;
+    float scrubber = 0;
+    float volume = 1.0f;
+    std::string bankFile, wavetableFile, seqFile;
 
     /* Init Synth */
     startaudiothread();
-    // init("C:\\Users\\mam19\\Documents\\GIT\\tracker64\\samples\\seq\\intopipe.bin", 0x1B);
 
     // Main loop
     while (!glfwWindowShouldClose(window))
@@ -500,7 +490,8 @@ int main(int, char**)
 
         // Main Loop
         static bool playing = false;
-        mainloop();
+        mainloop(volume);
+        if (currState == PLAYBACK_READY) { getloc(scrubber); }
 
         // Resize swap chain?
         if (g_SwapChainRebuild)
@@ -527,32 +518,34 @@ int main(int, char**)
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
         {
-            static float f = 0.0f;
-            static int counter = 0;
 
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-            //ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            //ImGui::Checkbox("Another Window", &show_another_window);
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-            ImGui::Checkbox("Tracks", &show_tracks);
-            // open file dialog when user clicks this button
-            if (ImGui::Button("Open Sequence"))
+            ImGui::Begin("N64 Sequence Player!");                          // Create a window called "Hello, world!" and append into it.
+            
+            //open file dialog when user clicks this button
+            if (ImGui::Button("Open Bank File")) {
                fileDialog.Open();
+               currLoader = BANK;
+            }
+            if (ImGui::Button("Open Wavetable File")) {
+               fileDialog.Open();
+               currLoader = WAVES;
+            }
+
+            if (currState == NOT_READY) { ImGui::BeginDisabled(); }
+            if (ImGui::Button("Open Sequence")) {
+               fileDialog.Open();
+               currLoader = SEQ;
+            }
+            if (currState == NOT_READY) { ImGui::EndDisabled(); }
+
             ImGui::SameLine();
             ImGui::Text("| Bank: ");
             ImGui::SameLine();
-            ImGui::SliderInt("##int", &bankNumber, 0x00, 0xFF, "0x%02X");
-
-            //if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                //counter++;
-            //ImGui::SameLine();
-            //ImGui::Text("counter = %d", counter);
+            ImGui::SliderInt("##bank", &bankNumber, 0x00, 0xFF, "0x%02X");
             
             /* Playback Controls */
             {
+               if (currState != PLAYBACK_READY) { ImGui::BeginDisabled(); }
                if (ImGui::Button("Play|Pause")) {                      // Buttons return true when clicked (most widgets return true when edited/activated)
                   playing = !playing;
                   if (playing)
@@ -566,6 +559,14 @@ int main(int, char**)
                   stop();
                   playing = false;
                }
+               ImGui::SameLine();
+               if (ImGui::SliderFloat("##scrubber", &scrubber, 0.0f, 1.0f)) {
+                  scrub(scrubber);
+               }
+               ImGui::Text("Volume: ");
+               ImGui::SameLine();
+               ImGui::SliderFloat("##volume", &volume, 0.0f, 1.0f);
+               if (currState != PLAYBACK_READY) { ImGui::EndDisabled(); }
             }
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
@@ -575,89 +576,30 @@ int main(int, char**)
             fileDialog.Display();
             if (fileDialog.HasSelected())
             {
-               std::cout << "Selected filename" << fileDialog.GetSelected().string() << std::endl;
-               init(fileDialog.GetSelected().string(), bankNumber);
-               playing = false;
+               switch (currLoader) {
+                  case SEQ:
+                     seqFile = fileDialog.GetSelected().string();
+                     init(seqFile, bankFile, wavetableFile, bankNumber);
+                     playing = false;
+                     currState = PLAYBACK_READY;
+                     break;
+                  case BANK:
+                     bankFile = fileDialog.GetSelected().string();
+                     if (!wavetableFile.empty())
+                        currState = LOAD_READY;
+                     break;
+                  case WAVES:
+                     wavetableFile = fileDialog.GetSelected().string();
+                     if (!bankFile.empty())
+                        currState = LOAD_READY;
+                     break;
+                  default:
+                     assert(false && "Incorrect file loader?");
+                     break;
+               }
+               std::cout << "Selected filename: " << fileDialog.GetSelected().string() << std::endl;
                fileDialog.ClearSelected();
             }
-        }
-
-        // 3. Show another simple window.
-        //if (show_another_window)
-        //{
-        //    ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-        //    ImGui::Text("Hello from another window!");
-        //    if (ImGui::Button("Close Me"))
-        //        show_another_window = false;
-        //    ImGui::End();
-        //}
-
-        // static char testinput[64 * 50 * 3] = { 0 };
-        // static char testinput2[64] = { "aaaaaaaa" };
-        static int hoveredCol = 0;
-        static int hoveredRow = 0;
-        static int hoveredSubCol = 0;
-        static int selected = 0;
-        if (show_tracks)
-        {
-           ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-           ImGui::Text("Tracks");
-           // ImGui::InputText("test", testinput2, IM_ARRAYSIZE(testinput2));
-           /* Table */
-           static ImGuiTableFlags flags = 0;
-           ImGui::AlignTextToFramePadding();
-           ImGui::BeginTable("tracks", 3, flags);
-           ImGui::TableSetupColumn("One");
-           ImGui::TableSetupColumn("Two");
-           ImGui::TableSetupColumn("Three");
-           ImGui::TableHeadersRow();
-           int i = 0;
-           for (int row = 0; row < 50; row++)
-           {
-              ImGui::TableNextRow();
-              for (int column = 0; column < 3; column++)
-              {
-                 // char* columnbuf = &testinput[0] + 64 * (50 * column + row);
-                 ImGui::TableSetColumnIndex(column);
-                 // ImGui::InputText("password", columnbuf, 64, ImGuiInputTextFlags_Password);
-                 // Demonstrate keeping auto focus on the input box
-                 //if (ImGui::IsItemHovered() || (!ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
-                 //   ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
-                 // ImGui::SameLine();
-                 ImGui::Text("--- ");
-                 if (ImGui::IsItemHovered() || ImGui::IsItemActive()) {
-                    hoveredCol = column;
-                    hoveredRow = row;
-                    hoveredSubCol = 0;
-                 }
-                 ImGui::SameLine();
-                 ImGui::Text("-- ");
-                 if (ImGui::IsItemHovered() || ImGui::IsItemActive()) {
-                    hoveredCol = column;
-                    hoveredRow = row;
-                    hoveredSubCol = 1;
-                 }
-                 ImGui::SameLine();
-                 //ImGui::Text("-- ");
-                 ImGui::Text("%d-%d-%d", hoveredCol, hoveredRow, hoveredSubCol);
-                 ImGui::SameLine();
-                 ImGui::Text("---");
-                 if (ImGui::IsItemHovered() || ImGui::IsItemActive()) {
-                    hoveredCol = column;
-                    hoveredRow = row;
-                    hoveredSubCol = 2;
-                 }
-
-                 //if (ImGui::Selectable(buffer, selected == i)) {
-                 //   selected = i;
-                 //}
-                 i++;
-              }
-           }
-
-
-           ImGui::EndTable();
-           ImGui::End();
         }
 
         // Rendering

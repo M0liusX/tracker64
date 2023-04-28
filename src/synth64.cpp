@@ -13,6 +13,7 @@
 #include "synth64.hpp"
 
 
+/* TODO: Refactor these essentially duplicate functions. */
 void loadbin(std::string path, uint8_t* mem, uint16_t offset)
 {
    std::ifstream file(path, std::ios::ate | std::ios::binary);
@@ -53,44 +54,51 @@ void swapbytes(u8 count, u8* bytes) {
    }
 }
 
-#define AUDIO_HEAP_SIZE    2048 * 1024
-#define AUDIO_MAX_VOICES   32
-#define AUDIO_MAX_UPDATES  64
-#define AUDIO_MAX_CHANNELS 16
-#define AUDIO_EVT_COUNT    32
+#define AUDIO_HEAP_SIZE    256 * 1024
+#define AUDIO_MAX_VOICES   64
+#define AUDIO_MAX_UPDATES  128
+#define AUDIO_MAX_CHANNELS 32
+#define AUDIO_EVT_COUNT    64
 #define AUDIO_FREQUENCY    32000
 
 #define AUDIO_BUFSZ        320
 #define AUDIO_CLIST_SIZE   32 * 1024
 
+static me::MeAudio* audio; // audio playback backend
+static bool initialized = false;
+
 static ALHeap audioHp;
 static ALGlobals audioGlobals;
 static ALCSPlayer cseqPlayer;
-static u8* rdram;
 static Acmd audioCmdList[AUDIO_CLIST_SIZE];
 
-static s32 audioDmaCallback(s32 addr, s32 len, void* state) {
-   return addr;
-}
-
-static ALDMAproc audioNewDma(void* arg) {
-   return audioDmaCallback;
-}
-
-static me::MeAudio* audio;
 static u8* imem;
 static u8* dmem;
+static u8* rdram;
 static s32 seqFileAddress, ctlFileAddress, tblFileAddress, commandListAddress, audioBufferAddress, audioHeapAddress;
 static ALCSeq cseq = {};
 static ALSeqpConfig cscfg = {};
 static ALSynConfig scfg = {};
 static ALCSeqMarker start = {};
-static bool initialized = false;
+static ALCSeqMarker end = {};
 
+
+/* Dummy audio dma callback stubs. */
+static s32 audioDmaCallback(s32 addr, s32 len, void* state) {
+   return addr;
+}
+static ALDMAproc audioNewDma(void* arg) {
+   return audioDmaCallback;
+}
+
+static s32 lastLocTicks = 0;
+static u32 overflowAccumulator = 0;
 void stop() {
    if (!initialized) { return; }
    alCSPStop(&cseqPlayer);
    alCSeqSetLoc(&cseq, &start);
+   lastLocTicks = 0;
+   overflowAccumulator = 0;
 }
 
 void play() {
@@ -103,18 +111,46 @@ void pause() {
    alCSPStop(&cseqPlayer);
 }
 
+void scrub(float position) {
+   ALCSeqMarker scrubMarker;
+   s32 newTick = end.lastTicks * position;
+   alCSeqNewMarker(&cseq, &scrubMarker, newTick);
+   alCSeqSetLoc(&cseq, &scrubMarker);
+   lastLocTicks = 0;
+   overflowAccumulator = 0;
+}
+
+void getloc(float& position) {
+   ALCSeqMarker currMarker;
+   alCSeqGetLoc(&cseq, &currMarker);
+
+   /* We overflowed, lets do some math. */
+   u32 currTicks, lastTicks;
+   memcpy(&currTicks, &currMarker.lastTicks, 4);
+   memcpy(&lastTicks, &lastLocTicks, 4);
+   if (lastTicks > currTicks) {
+      u32 overflowStep = (u64) 0x100000000 % (u32) end.lastTicks;
+      overflowAccumulator = (overflowAccumulator + overflowStep) % end.lastTicks;
+   }
+
+   position = (float) ((currMarker.lastTicks + overflowAccumulator) % end.lastTicks) / (float) end.lastTicks;
+   lastLocTicks = currMarker.lastTicks;
+}
+
 void startaudiothread() {
    load();
    power(false);
    audio = new me::MeAudio;
 }
 
-void init(std::string seqPath, int bank) {
+void init(std::string seqPath, std::string bankPath, std::string wavetablePath, int bank) {
    if (initialized) { 
       stop();
       alClose(&audioGlobals);
    }
    initialized = false;
+   lastLocTicks = 0;
+   overflowAccumulator = 0;
 
    imem = static_cast<u8*>(getimem());
    dmem = static_cast<u8*>(getdmem());
@@ -130,28 +166,29 @@ void init(std::string seqPath, int bank) {
 
    loadbin("ucode/audio_data.zbin", dmem, 0); // rsp udata
    loadbin("ucode/audio.zbin", imem, 0x80); // rsp ucode
-   loadfile(seqPath, seqFile); // mp1 mario board seq
-   loadfile("samples/ctl/smash1.ctl", ctlFile); // mp1 soundbank file
-   loadfile("samples/tbl/smash1.ztbl", tblFile); // mp1 wavetable file
-   swapbytes(17, seqFile.data());
+   loadfile(seqPath, seqFile); // seq (midi) file
+   loadfile(bankPath, ctlFile); // soundbank file
+   loadfile(wavetablePath, tblFile); // wavetable file
+   swapbytes(17, seqFile.data()); // swap header for endianess compatibility
 
+   /* Reserve and initialize these memory regions in our virtual RDRAM. */
    seqFileAddress = 0;
    ctlFileAddress = (seqFile.size() + 0xF) & (~0xF);
    tblFileAddress = ((ctlFileAddress + ctlFile.size()) + 0xF) & (~0xF);
    commandListAddress = (tblFileAddress + tblFile.size() + 0xF) & (~0xF);
    audioBufferAddress = ((commandListAddress + AUDIO_CLIST_SIZE * sizeof(Acmd)) + 0xF) & (~0xF);
    audioHeapAddress = ((audioBufferAddress + 4 * AUDIO_BUFSZ) + 0xF) & (~0xF);
-   assert((AUDIO_HEAP_SIZE + audioHeapAddress) < 0x1000000); // do not exceed 8MB ram size for now.
+   assert((AUDIO_HEAP_SIZE + audioHeapAddress) < 0x1000000); // do not exceed 16MB ram size for now.
    memcpy(rdram + seqFileAddress, seqFile.data(), seqFile.size());
    memcpy(rdram + ctlFileAddress, ctlFile.data(), ctlFile.size());
    memcpy(rdram + tblFileAddress, tblFile.data(), tblFile.size());
 
+   /* Initialize Audio Heap */
    audioHp = {};
    audioHp.base = rdram + audioHeapAddress;
    audioHp.cur = rdram + audioHeapAddress;
    audioHp.count = 0;
    audioHp.len = AUDIO_HEAP_SIZE;
-
    s32 audioRate = 0x02E6D354 / (s32)(0x02E6D354 / (f32)AUDIO_FREQUENCY - .5f);
    scfg = {
        .maxVVoices = AUDIO_MAX_VOICES,
@@ -166,6 +203,7 @@ void init(std::string seqPath, int bank) {
    alInit(&audioGlobals, &scfg);
    audioGlobals.rdram = rdram;
 
+   /* Initialize CSeqPlayer and CSequence. */
    cscfg = {
       .maxVoices = AUDIO_MAX_VOICES,
       .maxEvents = AUDIO_EVT_COUNT,
@@ -186,13 +224,14 @@ void init(std::string seqPath, int bank) {
    alBnkfNew(ctlFileAddress, tblFileAddress);
    alCSPSetBank(&cseqPlayer, bankFile->getBank(bank));
    alCSeqGetLoc(&cseq, &start);
-
+   alCSeqGetFinalMarker(&cseq, &end);
    initialized = true;
 }
 
-int mainloop() {
+int mainloop(float volume) {
    /* Skip loop if uninitialized synth */
    if (!initialized) { return 0; }
+
    /* Generate required audio */
    while (audio->NeedsAudio()) {
       /* Generate and write to DRAM the audio command list */
@@ -205,7 +244,7 @@ int mainloop() {
       data = commandListAddress;
       memcpy(dmem + 0xFF0, &data, 4);
 
-      /* Write to 0xFF4 a 64 length of rdram cmdList (cmdLen * sizeof(Acmd)) */
+      /* Write to 0xFF4 length of rdram cmdList (cmdLen * sizeof(Acmd)) */
       data = cmdLen * sizeof(Acmd);
       memcpy(dmem + 0xFF4, &data, 4);
 
@@ -215,11 +254,15 @@ int mainloop() {
 
       /* Push generated samples to stream */
       u8* output = (rdram + audioBufferAddress);
+      if (volume != 1.0f) {
+         for (u32 i = 0; i < AUDIO_BUFSZ * DEVICE_CHANNELS; i++) {
+            ((s16*)output)[i] = (s16) ((s16*)output)[i] * volume;
+         }
+      }
       memcpy(audio->GetAudioBuffer(), output, AUDIO_BUFSZ * sizeof(s16) * DEVICE_CHANNELS);
       audio->PushToStream();
 
       /* TODO: Missing unloading rsp. */
-      // outfile.close();
       // unload();
    }
    return 0;

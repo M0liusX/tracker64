@@ -19,11 +19,6 @@ namespace me {
    struct AudioBuffer {
       std::array<short, BUFFER_SIZE * DEVICE_CHANNELS> stream = { 0 };
       std::atomic<bool> ready = 0;
-      //short samples[BUFFER_SIZE] = { 0 };
-      //std::array<short, STREAM_SIZE> stream = { 0 };
-      //std::atomic<uint32_t> count = 0; // updated by application in PushToStream
-      //std::atomic<uint32_t> tail = 0; // updated by application in PushToStream
-      //uint32_t head = 0;
    };
 
    struct AudioSwapChain {
@@ -76,7 +71,6 @@ namespace me {
       void PushToStream() {
          swapChain.buffers[swapChain.audioThreadyBufferId].ready = true;
          swapChain.audioThreadyBufferId = ++swapChain.audioThreadyBufferId % BUFFER_COUNT;
-
       }
 
    private:
@@ -102,7 +96,6 @@ namespace me {
          // ma_uint64 totalFrames = unreadSamples < frameCount ? unreadSamples : frameCount;
          ma_uint64 totalFrames = frameCount;
 
-         //std::cout << "Callback: " << (totalFrames << 1) << std::endl;
          /* Too Slow, Missing Data! */
          if (!pBuffer->ready) {
             return;

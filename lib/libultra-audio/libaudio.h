@@ -822,6 +822,7 @@ s32     alCSeqGetTicks(ALCSeq *seq);
 f32     alCSeqTicksToSec(ALCSeq *seq, s32 ticks, u32 tempo);
 u32     alCSeqSecToTicks(ALCSeq *seq, f32 sec, u32 tempo);
 void    alCSeqNewMarker(ALCSeq *seq, ALCSeqMarker *m, u32 ticks);
+void    alCSeqGetFinalMarker(ALCSeq* seq, ALCSeqMarker* m);
 void    alCSeqSetLoc(ALCSeq *seq, ALCSeqMarker *marker);
 void    alCSeqGetLoc(ALCSeq *seq, ALCSeqMarker *marker); 
 

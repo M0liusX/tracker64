@@ -298,6 +298,33 @@ void alCSeqNewMarker(ALCSeq *seq, ALCSeqMarker *m, u32 ticks)
             break;
         
     } while (tempSeq.lastTicks < ticks);
+}
+
+void alCSeqGetFinalMarker(ALCSeq* seq, ALCSeqMarker* m)
+{
+   ALEvent     evt;
+   ALCSeq      tempSeq;
+   s32         i;
+
+
+   alCSeqNew(&tempSeq, (u8*)seq->base);
+
+   do {
+      m->validTracks = tempSeq.validTracks;
+      m->lastTicks = tempSeq.lastTicks;
+      m->lastDeltaTicks = tempSeq.lastDeltaTicks;
+
+      for (i = 0; i < 16; i++)
+      {
+         m->curLoc[i] = tempSeq.curLoc[i];
+         m->curBUPtr[i] = tempSeq.curBUPtr[i];
+         m->curBULen[i] = tempSeq.curBULen[i];
+         m->lastStatus[i] = tempSeq.lastStatus[i];
+         m->evtDeltaTicks[i] = tempSeq.evtDeltaTicks[i];
+      }
+
+      alCSeqNextEvent(&tempSeq, &evt);
+   } while (evt.type != AL_SEQ_END_EVT && evt.type != AL_CSP_LOOPEND);
 
 }
 
