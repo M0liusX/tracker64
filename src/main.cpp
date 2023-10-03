@@ -22,6 +22,8 @@
 #include <vulkan/vulkan.h>
 
 #include "synth64.hpp"
+#include "seqparse.hpp"
+
 
 // [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
 // To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
@@ -439,22 +441,22 @@ int main(int, char**)
         begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
         err = vkBeginCommandBuffer(command_buffer, &begin_info);
-        check_vk_result(err);
+check_vk_result(err);
 
-        ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
+ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
 
-        VkSubmitInfo end_info = {};
-        end_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        end_info.commandBufferCount = 1;
-        end_info.pCommandBuffers = &command_buffer;
-        err = vkEndCommandBuffer(command_buffer);
-        check_vk_result(err);
-        err = vkQueueSubmit(g_Queue, 1, &end_info, VK_NULL_HANDLE);
-        check_vk_result(err);
+VkSubmitInfo end_info = {};
+end_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+end_info.commandBufferCount = 1;
+end_info.pCommandBuffers = &command_buffer;
+err = vkEndCommandBuffer(command_buffer);
+check_vk_result(err);
+err = vkQueueSubmit(g_Queue, 1, &end_info, VK_NULL_HANDLE);
+check_vk_result(err);
 
-        err = vkDeviceWaitIdle(g_Device);
-        check_vk_result(err);
-        ImGui_ImplVulkan_DestroyFontUploadObjects();
+err = vkDeviceWaitIdle(g_Device);
+check_vk_result(err);
+ImGui_ImplVulkan_DestroyFontUploadObjects();
     }
 
     // create a file browser instance
@@ -468,12 +470,19 @@ int main(int, char**)
     enum FileLoader { NONE, BANK, WAVES, SEQ };
     FileLoader currLoader = NONE;
 
-    bool show_demo_window = false;
+    bool show_demo_window, show_tracks = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     int bankNumber = 0;
     float scrubber = 0;
     float volume = 1.0f;
+    ImVec2 trackScroll = { 0.f, 0.f };
+    ImVec2 trackOffset = { 10.f, 30.f };
+    ImVec2 trackScale = { 1.f, 1.f };
+    int trackID = 0;
+    bool wasDown = 0;
+    float scrollSpeed;
     std::string bankFile, wavetableFile, seqFile;
+    Midi64 currentMidi;
 
     /* Init Synth */
     startaudiothread();
@@ -481,46 +490,115 @@ int main(int, char**)
     // Main loop
     while (!glfwWindowShouldClose(window))
     {
-        // Poll and handle events (inputs, window resize, etc.)
-        // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
-        // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
-        // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
-        // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
-        glfwPollEvents();
+       // Poll and handle events (inputs, window resize, etc.)
+       // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
+       // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
+       // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
+       // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
+       glfwPollEvents();
 
-        // Main Loop
-        static bool playing = false;
-        mainloop(volume);
-        if (currState == PLAYBACK_READY) { getloc(scrubber); }
+       // Main Loop
+       static bool playing = false;
+       mainloop(volume);
+       if (currState == PLAYBACK_READY) { getloc(scrubber); }
 
-        // Resize swap chain?
-        if (g_SwapChainRebuild)
-        {
-            int width, height;
-            glfwGetFramebufferSize(window, &width, &height);
-            if (width > 0 && height > 0)
-            {
-                ImGui_ImplVulkan_SetMinImageCount(g_MinImageCount);
-                ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, &g_MainWindowData, g_QueueFamily, g_Allocator, width, height, g_MinImageCount);
-                g_MainWindowData.FrameIndex = 0;
-                g_SwapChainRebuild = false;
+       // Resize swap chain?
+       if (g_SwapChainRebuild)
+       {
+          int width, height;
+          glfwGetFramebufferSize(window, &width, &height);
+          if (width > 0 && height > 0)
+          {
+             ImGui_ImplVulkan_SetMinImageCount(g_MinImageCount);
+             ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, &g_MainWindowData, g_QueueFamily, g_Allocator, width, height, g_MinImageCount);
+             g_MainWindowData.FrameIndex = 0;
+             g_SwapChainRebuild = false;
+          }
+       }
+
+       // Start the Dear ImGui frame
+       ImGui_ImplVulkan_NewFrame();
+       ImGui_ImplGlfw_NewFrame();
+       ImGui::NewFrame();
+
+       // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+       if (show_demo_window)
+          ImGui::ShowDemoWindow(&show_demo_window);
+
+       if (show_tracks) {
+          ImGui::Begin("Tracks!");
+
+          /* Scroll Controls */
+          if (ImGui::IsWindowHovered()) {
+             float value = ImGui::GetIO().MouseWheel;
+             if (value == 0) {
+                scrollSpeed = 0;
+             }
+             else {
+                scrollSpeed += value * 10;
+             }
+             trackScroll.y -= scrollSpeed * 2;
+          }
+
+          /* Draw tracks! */
+          ImDrawList* drawList = ImGui::GetWindowDrawList();
+          ImVec2 offset = ImGui::GetWindowPos();
+          float winWidth = ImGui::GetWindowWidth();
+          offset.x; offset.y += trackScroll.y;
+          if (io.KeyCtrl) {
+             bool pressed = io.KeysData[ImGuiKey_RightArrow].Down || io.KeysData[ImGuiKey_LeftArrow].Down;
+             if (!wasDown) {
+                trackID += int(io.KeysData[ImGuiKey_RightArrow].Down);
+                trackID -= int(io.KeysData[ImGuiKey_LeftArrow].Down);
+                trackID = std::clamp<int>(trackID, 0, 15);
+             }
+             wasDown = pressed;
+          } else if (io.KeyShift) {
+             trackScale.x += 0.03f * float(io.KeysData[ImGuiKey_RightArrow].Down);
+             trackScale.x -= 0.03f * float(io.KeysData[ImGuiKey_LeftArrow].Down);
+             trackScale.y += 0.03f * float(io.KeysData[ImGuiKey_UpArrow].Down);
+             trackScale.y -= 0.03f * float(io.KeysData[ImGuiKey_DownArrow].Down);
+             trackScale.x = std::clamp<float>(trackScale.x, 0.2f, 10.0f);
+             trackScale.y = std::clamp<float>(trackScale.y, 0.2f, 10.0f);
+          } else {
+             trackOffset.x -= 2.0f * float(io.KeysData[ImGuiKey_RightArrow].Down);
+             trackOffset.x += 2.0f * float(io.KeysData[ImGuiKey_LeftArrow].Down);
+          }
+          #define DRAW_RECT(X, Y, W, H)  \
+            drawList->AddRectFilled(ImVec2( offset.x + (X + trackOffset.x) * trackScale.x, \
+                                            offset.y + (Y) * trackScale.y), \  
+                                    ImVec2( offset.x + (X + W + trackOffset.x) * trackScale.x, \
+                                            offset.y + (Y + H) * trackScale.y), \
+                                    IM_COL32(0xFF, 0xFF, 0, 0xFF), \
+                                    5.0f, ImDrawFlags_RoundCornersAll);
+            auto commands = currentMidi.GetCommands(trackID);
+            float delta = 0;
+            for (auto command : commands) {
+               if ((command->status & 0xf0) == AL_MIDI_NoteOn) {
+                  std::vector<u8> encDuration;
+                  encDuration.insert(encDuration.begin(), command->bytes.begin() + 2, command->bytes.end());
+
+                  delta += command->delta / 30.0f;
+                  float pitch = (command->bytes[0] - 0x60) * -10;
+                  u64 duration = Track64::DecodeDelta(encDuration);
+                  //std::cout << "NOTE: [pitch]" + std::to_string(command->bytes[0]) << std::endl;
+                  //std::cout << "NOTE: [delta]" + std::to_string(command->delta) << std::endl;
+                  //std::cout << "NOTE: [duration]" + std::to_string(duration) << std::endl;
+                  DRAW_RECT(delta, pitch, duration / 30.0f, 10);
+                  delta += duration / 30.0f;
+               }
             }
+            ImGui::End();
         }
-
-        // Start the Dear ImGui frame
-        ImGui_ImplVulkan_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        if (show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
         {
 
             ImGui::Begin("N64 Sequence Player!");                          // Create a window called "Hello, world!" and append into it.
             
+            ImGui::Checkbox("Show Demo!", &show_demo_window);
+            ImGui::Checkbox("Show Tracks!", &show_tracks);
+
             //open file dialog when user clicks this button
             if (ImGui::Button("Open Bank File")) {
                fileDialog.Open();
@@ -579,6 +657,8 @@ int main(int, char**)
                switch (currLoader) {
                   case SEQ:
                      seqFile = fileDialog.GetSelected().string();
+                     currentMidi = Midi64();
+                     currentMidi.Parse(seqFile);
                      init(seqFile, bankFile, wavetableFile, bankNumber);
                      playing = false;
                      currState = PLAYBACK_READY;

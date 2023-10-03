@@ -26,6 +26,7 @@ void loadbin(std::string path, uint8_t* mem, uint16_t offset)
    file.read(reinterpret_cast<char*>(&mem[offset]), fileSize);
    file.close();
 }
+
 void loadfile(std::string path, std::vector<uint8_t>& vec) {
    std::ifstream file(path, std::ios::ate | std::ios::binary);
    if (!file.is_open()) {
