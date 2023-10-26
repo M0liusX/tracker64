@@ -165,6 +165,9 @@
     <ClCompile Include="lib\libultra-audio\src\cspstop.cpp">
       <Filter>libultra</Filter>
     </ClCompile>
+    <ClCompile Include="src\seqparse.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lib\libultra-audio\PR\os_internal.h">
@@ -208,6 +211,9 @@
     </ClInclude>
     <ClInclude Include="lib\imgui\imfilebrowser.h">
       <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\seqparse.hpp">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

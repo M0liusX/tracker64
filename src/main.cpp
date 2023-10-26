@@ -470,7 +470,9 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
     enum FileLoader { NONE, BANK, WAVES, SEQ };
     FileLoader currLoader = NONE;
 
-    bool show_demo_window, show_tracks = false;
+    bool show_demo_window = false, show_piano_roll = false, show_enabled_tracks = false;
+    int enabledTracks = 0xFFFFFFFF;
+    int validTracks = 0;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     int bankNumber = 0;
     float scrubber = 0;
@@ -525,8 +527,8 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
        if (show_demo_window)
           ImGui::ShowDemoWindow(&show_demo_window);
 
-       if (show_tracks) {
-          ImGui::Begin("Tracks!");
+       if (show_piano_roll) {
+          ImGui::Begin("Piano Roll!");
 
           /* Scroll Controls */
           if (ImGui::IsWindowHovered()) {
@@ -591,14 +593,42 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
             ImGui::End();
         }
 
+       int prevEnabledTracks = enabledTracks;
+       if (show_enabled_tracks) {
+          ImGui::Begin("Enabled Tracks!");
+            for (int y = 0; y < 4; y++)
+               for (int x = 0; x < 4; x++)
+               {
+                  if (x > 0)
+                     ImGui::SameLine();
+                  int id = y * 4 + x;
+                  int bit = (1 << id);
+                  ImGui::PushID(id);
+                  std::string name = "Track " + std::to_string(id);
+                  if (ImGui::Selectable(name.c_str(), (validTracks & enabledTracks & bit) != 0, 0, ImVec2(60, 30)))
+                  {
+                     // Toggle clicked cell + toggle neighbors
+                     enabledTracks ^= (validTracks & bit);
+                  }
+                  ImGui::PopID();
+               }
+
+            ImGui::End();
+       }
+       if (currState == PLAYBACK_READY) {
+          if (prevEnabledTracks != enabledTracks) {
+             setEnabledTracks(enabledTracks);
+          }
+       }
+
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
         {
 
             ImGui::Begin("N64 Sequence Player!");                          // Create a window called "Hello, world!" and append into it.
             
             ImGui::Checkbox("Show Demo!", &show_demo_window);
-            ImGui::Checkbox("Show Tracks!", &show_tracks);
-
+            ImGui::Checkbox("Show Piano Roll!", &show_piano_roll);
+            ImGui::Checkbox("Show Enabled Tracks!", &show_enabled_tracks);
             //open file dialog when user clicks this button
             if (ImGui::Button("Open Bank File")) {
                fileDialog.Open();
@@ -615,6 +645,12 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
                currLoader = SEQ;
             }
             if (currState == NOT_READY) { ImGui::EndDisabled(); }
+
+            if ((currState != PLAYBACK_READY) || playing) { ImGui::BeginDisabled(); }
+            if (ImGui::Button("Reset Bank")) {
+               resetBank(bankNumber);
+            }
+            if ((currState != PLAYBACK_READY) || playing) { ImGui::EndDisabled(); }
 
             ImGui::SameLine();
             ImGui::Text("| Bank: ");
@@ -646,7 +682,17 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
                ImGui::SliderFloat("##volume", &volume, 0.0f, 1.0f);
                if (currState != PLAYBACK_READY) { ImGui::EndDisabled(); }
             }
-
+            {
+               static char buf[32] = "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e";
+               if ((currState != PLAYBACK_READY) || playing) { ImGui::BeginDisabled(); }
+               if (ImGui::Button("Record")) {
+                  std::string s(buf);
+                  record(s);
+               }
+               ImGui::SameLine();
+               ImGui::InputText("Ouput wav file", buf, IM_ARRAYSIZE(buf));
+               if ((currState != PLAYBACK_READY) || playing) { ImGui::EndDisabled(); }
+            }
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
             ImGui::End();
 
@@ -660,6 +706,7 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
                      currentMidi = Midi64();
                      currentMidi.Parse(seqFile);
                      init(seqFile, bankFile, wavetableFile, bankNumber);
+                     validTracks = getValidTracks();
                      playing = false;
                      currState = PLAYBACK_READY;
                      break;

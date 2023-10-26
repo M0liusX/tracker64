@@ -12,6 +12,26 @@
 
 #include "synth64.hpp"
 
+/* WAV Header */
+typedef struct WAV_HEADER {
+   /* RIFF Chunk Descriptor */
+   uint8_t RIFF[4] = { 'R', 'I', 'F', 'F' }; // RIFF Header Magic header
+   uint32_t ChunkSize;                     // RIFF Chunk Size
+   uint8_t WAVE[4] = { 'W', 'A', 'V', 'E' }; // WAVE Header
+   /* "fmt" sub-chunk */
+   uint8_t fmt[4] = { 'f', 'm', 't', ' ' }; // FMT header
+   uint32_t Subchunk1Size = 16;           // Size of the fmt chunk
+   uint16_t AudioFormat = 1; // Audio format 1=PCM,6=mulaw,7=alaw,     257=IBM
+   // Mu-Law, 258=IBM A-Law, 259=ADPCM
+   uint16_t NumOfChan = 2;   // Number of channels 1=Mono 2=Sterio
+   uint32_t SamplesPerSec = 32000;   // Sampling Frequency in Hz
+   uint32_t bytesPerSec = 32000 * 4; // bytes per second
+   uint16_t blockAlign = 4;          // 2=16-bit mono, 4=16-bit stereo
+   uint16_t bitsPerSample = 16;      // Number of bits per sample
+   /* "data" sub-chunk */
+   uint8_t Subchunk2ID[4] = { 'd', 'a', 't', 'a' }; // "data"  string
+   uint32_t Subchunk2Size;                        // Sampled data length
+} wav_hdr;
 
 /* TODO: Refactor these essentially duplicate functions. */
 void loadbin(std::string path, uint8_t* mem, uint16_t offset)
@@ -77,6 +97,8 @@ static u8* imem;
 static u8* dmem;
 static u8* rdram;
 static s32 seqFileAddress, ctlFileAddress, tblFileAddress, commandListAddress, audioBufferAddress, audioHeapAddress;
+static u32 validTracks = 0;
+static u32 currentEnabledTracks = 0xFFFFFFFF;
 static ALCSeq cseq = {};
 static ALSeqpConfig cscfg = {};
 static ALSynConfig scfg = {};
@@ -104,12 +126,22 @@ void stop() {
 
 void play() {
    if (!initialized) { return; }
+   cseq.validTracks &= currentEnabledTracks;
    alCSPPlay(&cseqPlayer);
 }
 
 void pause() {
    if (!initialized) { return; }
    alCSPStop(&cseqPlayer);
+}
+
+void setEnabledTracks(int enabledTracks) {
+   currentEnabledTracks = enabledTracks;
+   cseq.validTracks &= currentEnabledTracks;
+}
+
+int getValidTracks() {
+   return validTracks;
 }
 
 void scrub(float position) {
@@ -142,6 +174,11 @@ void startaudiothread() {
    load();
    power(false);
    audio = new me::MeAudio;
+}
+
+void resetBank(int bank) {
+   ALBankFile* bankFile = (ALBankFile*)getRamObject(ctlFileAddress);
+   alCSPSetBank(&cseqPlayer, bankFile->getBank(bank));
 }
 
 void init(std::string seqPath, std::string bankPath, std::string wavetablePath, int bank) {
@@ -219,6 +256,7 @@ void init(std::string seqPath, std::string bankPath, std::string wavetablePath, 
    alCSPNew(&cseqPlayer, &cscfg);
 
    alCSeqNew(&cseq, rdram + seqFileAddress);
+   validTracks = cseq.validTracks;
    alCSPSetSeq(&cseqPlayer, &cseq);
 
    ALBankFile* bankFile = (ALBankFile*)getRamObject(ctlFileAddress);
@@ -229,29 +267,33 @@ void init(std::string seqPath, std::string bankPath, std::string wavetablePath, 
    initialized = true;
 }
 
+void audioFrame() {
+   /* Generate and write to DRAM the audio command list */
+   s32 cmdLen = 0;
+   alAudioFrame(audioCmdList, &cmdLen, (s16*)audioBufferAddress, AUDIO_BUFSZ);
+   memcpy(rdram + commandListAddress, audioCmdList, cmdLen * sizeof(Acmd));
+
+   /* Write to DMEM address 0xFF0 the 32 bit address of rdram location of cmdList */
+   s32 data = 0;
+   data = commandListAddress;
+   memcpy(dmem + 0xFF0, &data, 4);
+
+   /* Write to 0xFF4 length of rdram cmdList (cmdLen * sizeof(Acmd)) */
+   data = cmdLen * sizeof(Acmd);
+   memcpy(dmem + 0xFF4, &data, 4);
+
+   /* Loop through rsp ucode until halt is reached. */
+   while (!halted()) { run(); }
+   unhalt();
+}
+
 int mainloop(float volume) {
    /* Skip loop if uninitialized synth */
    if (!initialized) { return 0; }
 
    /* Generate required audio */
    while (audio->NeedsAudio()) {
-      /* Generate and write to DRAM the audio command list */
-      s32 cmdLen = 0;
-      alAudioFrame(audioCmdList, &cmdLen, (s16*)audioBufferAddress, AUDIO_BUFSZ);
-      memcpy(rdram + commandListAddress, audioCmdList, cmdLen * sizeof(Acmd));
-
-      /* Write to DMEM address 0xFF0 the 32 bit address of rdram location of cmdList */
-      s32 data = 0;
-      data = commandListAddress;
-      memcpy(dmem + 0xFF0, &data, 4);
-
-      /* Write to 0xFF4 length of rdram cmdList (cmdLen * sizeof(Acmd)) */
-      data = cmdLen * sizeof(Acmd);
-      memcpy(dmem + 0xFF4, &data, 4);
-
-      /* Loop through rsp ucode until halt is reached. */
-      while (!halted()) { run(); }
-      unhalt();
+      audioFrame();
 
       /* Push generated samples to stream */
       u8* output = (rdram + audioBufferAddress);
@@ -269,3 +311,50 @@ int mainloop(float volume) {
    return 0;
 }
 
+void record(std::string name) {
+   std::ofstream binfile("temp.sw", std::ofstream::binary);
+
+   ALCSeqMarker currMarker;
+   alCSeqGetLoc(&cseq, &currMarker);
+   cseq.validTracks &= currentEnabledTracks;
+   alCSPPlay(&cseqPlayer);
+
+   float p, lp = 0.0f;
+   getloc(p); lp = p;
+   while (p >= lp) {
+      lp = p;
+      audioFrame();
+      u8* output = (rdram + audioBufferAddress);
+      binfile.write((char*)output, AUDIO_BUFSZ * 4);
+      getloc(p);
+      std::cout << p << std::endl;
+   }
+   alCSPStop(&cseqPlayer);
+   alCSeqSetLoc(&cseq, &currMarker);
+
+   binfile.close();
+
+   std::string filename = name + ".wav";
+   std::ifstream in("temp.sw", std::ifstream::binary);
+   std::ofstream out(filename.c_str(), std::ofstream::binary);
+
+   uint32_t fsize = in.tellg();
+   in.seekg(0, std::ios::end);
+   fsize = (uint32_t)in.tellg() - fsize;
+   in.seekg(0, std::ios::beg);
+
+   wav_hdr wav;
+   wav.ChunkSize = fsize + sizeof(wav_hdr) - 8;
+   wav.Subchunk2Size = fsize + sizeof(wav_hdr) - 44;
+   out.write(reinterpret_cast<const char*>(&wav), sizeof(wav));
+
+   int16_t d;
+   for (int i = 0; i < fsize; ++i) {
+      // TODO: read/write in blocks
+      in.read(reinterpret_cast<char*>(&d), sizeof(int16_t));
+      out.write(reinterpret_cast<char*>(&d), sizeof(int16_t));
+   }
+
+   in.close();
+   out.close();
+}

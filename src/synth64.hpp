@@ -18,7 +18,12 @@ int mainloop(float volume = 1.0f);
 void play();
 void pause();
 void stop();
+void record(std::string name);
 void scrub(float pos);
 void getloc(float& pos); // TODO: Maybe let application keep track of position? Non-trivial with a blackbox synth.
 
+/* State change actions! */
+void setEnabledTracks(int enabledTracks);
+int getValidTracks();
+void resetBank(int bank);
 #endif
