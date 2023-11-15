@@ -114,6 +114,7 @@ public:
    std::vector<Command64*>& GetCommands(u32 track) {
       return tracks[track]->GetCommands();
    }
+   u32  GetDivision() { return division; }
 private:
    void ParseTrack(u32 track);
    bool ParseCommand(u32 track);
@@ -137,7 +138,7 @@ private:
    u32 BUPos[16];
    u32 curLoc[16];
 
-   u32 division;
+   u32 division = 0;
    u8 lstatus;
 };
 

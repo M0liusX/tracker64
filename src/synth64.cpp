@@ -179,6 +179,14 @@ void startaudiothread() {
 void resetBank(int bank) {
    ALBankFile* bankFile = (ALBankFile*)getRamObject(ctlFileAddress);
    alCSPSetBank(&cseqPlayer, bankFile->getBank(bank));
+   /* Error checking */
+   if (bank >= bankFile->bankCount) {
+      std::cout << "ERROR: Invalid Bank!" << std::endl;
+      initialized = false;
+   }
+   else {
+      initialized = true;
+   }
 }
 
 void init(std::string seqPath, std::string bankPath, std::string wavetablePath, int bank) {
@@ -265,6 +273,12 @@ void init(std::string seqPath, std::string bankPath, std::string wavetablePath, 
    alCSeqGetLoc(&cseq, &start);
    alCSeqGetFinalMarker(&cseq, &end);
    initialized = true;
+
+   /* Error checking */
+   if (bank >= bankFile->bankCount) {
+      std::cout << "ERROR: Invalid Bank!" << std::endl;
+      initialized = false;
+   }
 }
 
 void audioFrame() {

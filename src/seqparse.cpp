@@ -113,11 +113,17 @@ bool Midi64::ParseCommand(u32 track) {
       }
       else if (etype == AL_CMIDI_LOOPSTART_CODE) {
          u8 b1 = GetByte(track); u8 b2 = GetByte(track);
+         Command64* command = new Command64();
+         command->delta = delta;
+         AddCommand(track, command);
          // assert(false);
       }
       else if (etype == AL_CMIDI_LOOPEND_CODE) {
          u8 b1 = GetByte(track); u8 b2 = GetByte(track); u8 b3 = GetByte(track);
          u8 b4 = GetByte(track); u8 b5 = GetByte(track); u8 b6 = GetByte(track);
+         Command64* command = new Command64();
+         command->delta = delta;
+         AddCommand(track, command);
          // assert(false);
       }
       else if (etype == AL_MIDI_META_EOT) {
@@ -163,9 +169,21 @@ bool Midi64::ParseCommand(u32 track) {
          AddCommand(track, command);
       }
       else if (mesg == AL_MIDI_ProgramChange) {
+         Command64* command = new Command64();
+         command->delta = delta;
+         AddCommand(track, command);
          // assert(false);
       }
       else if (mesg == AL_MIDI_ControlChange) {
+         Command64* command = new Command64();
+         command->delta = delta;
+         AddCommand(track, command);
+         // assert(false);
+      }
+      else if (mesg == AL_MIDI_PitchBendChange) {
+         Command64* command = new Command64();
+         command->delta = delta;
+         AddCommand(track, command);
          // assert(false);
       }
    }
