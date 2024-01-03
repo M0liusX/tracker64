@@ -252,7 +252,7 @@ def parse_note(value):
 def parse_command(track, lstatus):
    delta = parse_delta(track)
    status = get_byte(track)
-
+   print(str(delta) + ": ", end="")
    if status == AL_MIDI_Meta:
       etype = get_byte(track)
       status = 0
@@ -323,6 +323,9 @@ def parse_command(track, lstatus):
          else:
             print(hex(byte))
             assert(False)
+      elif mesg == AL_MIDI_PitchBendChange:
+         print("PITCH BEND: " + hex(status) )
+         assert(False)
       else:
          print("ERROR: " + hex(status) )
          assert(False)
@@ -333,6 +336,5 @@ def parse_command(track, lstatus):
 ### MAIN ###
 
 midi = midi64()
-seq = read_bin("../samples/seq/rainbow.bin")
+seq = read_bin("../samples/seq/intopipe.bin")
 parse_midi()
-midi.save("../samples/seq/rainbowexport.bin")

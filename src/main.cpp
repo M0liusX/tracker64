@@ -16,6 +16,8 @@
 #include <stdio.h>          // printf, fprintf
 #include <stdlib.h>         // abort
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -467,7 +469,7 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
     enum PlaybackState { NOT_READY, LOAD_READY, PLAYBACK_READY };
     PlaybackState currState = NOT_READY;
 
-    enum FileLoader { NONE, BANK, WAVES, SEQ };
+    enum FileLoader { NONE, BANK, WAVES, SEQ, SONG };
     FileLoader currLoader = NONE;
 
     bool show_demo_window = false, show_piano_roll = false, show_enabled_tracks = false;
@@ -738,6 +740,11 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
                ImGui::InputText("Ouput wav file", buf, IM_ARRAYSIZE(buf));
                if ((currState != PLAYBACK_READY) || playing) { ImGui::EndDisabled(); }
             }
+            if (ImGui::Button("Save Song List")) {
+               fileDialog.Open();
+               currLoader = SONG;
+            }
+
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
             ImGui::End();
 
@@ -764,6 +771,44 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
                      wavetableFile = fileDialog.GetSelected().string();
                      if (!bankFile.empty())
                         currState = LOAD_READY;
+                     break;
+                  case SONG:
+                  {
+                     std::string seqpath = "C:\\Users\\mam19\\Documents\\GIT\\tracker64\\samples\\mp1\\seqs\\";
+                     std::ifstream inputFile(fileDialog.GetSelected().string()); // Replace "your_file.txt" with the actual file name
+
+                     if (!inputFile.is_open()) {
+                        std::cerr << "Unable to open the file." << std::endl;
+                        return 1;
+                     }
+
+                     std::string line;
+                     std::vector<std::string> tokens;
+
+                     while (std::getline(inputFile, line)) {
+                        std::stringstream ss(line);
+                        std::string token;
+
+                        while (std::getline(ss, token, ',')) {
+                           tokens.push_back(token);
+                        }
+
+                        // Now, 'tokens' vector contains the individual parts of the line separated by commas
+                        // You can do further processing with the 'tokens' vector as needed
+                        std::cout << tokens[1] << std::endl;
+                        seqFile = seqpath + tokens[0];
+                        stop();
+                        init(seqFile, bankFile, wavetableFile, std::stoi(tokens[2]));
+                        validTracks = getValidTracks();
+                        record(tokens[1]);
+                        // currState = PLAYBACK_READY;
+
+                        // Clear the vector for the next line
+                        tokens.clear();
+                     }
+
+                     inputFile.close();
+                  }
                      break;
                   default:
                      assert(false && "Incorrect file loader?");

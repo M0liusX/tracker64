@@ -328,20 +328,26 @@ int mainloop(float volume) {
 void record(std::string name) {
    std::ofstream binfile("temp.sw", std::ofstream::binary);
 
-   ALCSeqMarker currMarker;
+   ALCSeqMarker currMarker, p, lp;
    alCSeqGetLoc(&cseq, &currMarker);
    cseq.validTracks &= currentEnabledTracks;
    alCSPPlay(&cseqPlayer);
 
-   float p, lp = 0.0f;
-   getloc(p); lp = p;
-   while (p >= lp) {
+   u32 state = 0;
+   float pos;
+   alCSeqGetLoc(&cseq, &p);
+   while (state < 2) {
       lp = p;
       audioFrame();
       u8* output = (rdram + audioBufferAddress);
       binfile.write((char*)output, AUDIO_BUFSZ * 4);
-      getloc(p);
-      std::cout << p << std::endl;
+      alCSeqGetLoc(&cseq, &p);
+      bool finished = (p.curLoc[0] < lp.curLoc[0]);
+      getloc(pos);
+      if (finished) {
+         state++;
+      }
+      std::cout << state << ": " << pos << std::endl;
    }
    alCSPStop(&cseqPlayer);
    alCSeqSetLoc(&cseq, &currMarker);
