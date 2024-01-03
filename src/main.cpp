@@ -26,6 +26,12 @@
 #include "synth64.hpp"
 #include "seqparse.hpp"
 
+// TODO: midi keyboard input
+#include <portmidi.h>
+#include <porttime.h>
+PmDeviceID deviceID;
+PortMidiStream* stream;
+PmEvent buffer[1024];
 
 // [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
 // To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
@@ -662,6 +668,62 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
 
             ImGui::End();
        }
+
+       // TODO: Draw MIDI Piano Input
+       if (true) {
+          ImU32 Black = IM_COL32(0, 0, 0, 255);
+          ImU32 White = IM_COL32(255, 255, 255, 255);
+          ImU32 Red = IM_COL32(255, 0, 0, 255);
+          ImGui::Begin("Keyboard");
+          ImDrawList* draw_list = ImGui::GetWindowDrawList();
+          ImVec2 p = ImGui::GetCursorScreenPos();
+          int width = 20;
+          int cur_key = 21;
+          for (int key = 0; key < 52; key++) {
+             ImU32 col = White;
+             if (false) {
+                col = Red;
+             }
+             draw_list->AddRectFilled(
+                ImVec2(p.x + key * width, p.y),
+                ImVec2(p.x + key * width + width, p.y + 120),
+                col, 0, ImDrawCornerFlags_All);
+             draw_list->AddRect(
+                ImVec2(p.x + key * width, p.y),
+                ImVec2(p.x + key * width + width, p.y + 120),
+                Black, 0, ImDrawCornerFlags_All);
+             cur_key++;
+             // has black?
+             if ((!((key - 1) % 7 == 0 || (key - 1) % 7 == 3) && key != 51)) {
+                cur_key++;
+             }
+          }
+          cur_key = 22;
+          for (int key = 0; key < 52; key++) {
+             bool black = (!((key - 1) % 7 == 0 || (key - 1) % 7 == 3) && key != 51);
+             if (black) {
+                ImU32 col = Black;
+                if (false) {
+                   col = Red;
+                }
+                draw_list->AddRectFilled(
+                   ImVec2(p.x + key * width + width * 3 / 4, p.y),
+                   ImVec2(p.x + key * width + width * 5 / 4 + 1, p.y + 80),
+                   col, 0, ImDrawCornerFlags_All);
+                draw_list->AddRect(
+                   ImVec2(p.x + key * width + width * 3 / 4, p.y),
+                   ImVec2(p.x + key * width + width * 5 / 4 + 1, p.y + 80),
+                   Black, 0, ImDrawCornerFlags_All);
+
+                cur_key += 2;
+             }
+             else {
+                cur_key++;
+             }
+          }
+          ImGui::End();
+       }
+
        if (currState == PLAYBACK_READY) {
           if (prevEnabledTracks != enabledTracks) {
              setEnabledTracks(enabledTracks);
