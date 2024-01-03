@@ -33,6 +33,7 @@
     <ClCompile Include="lib\libultra-audio\src\cseq.cpp" />
     <ClCompile Include="lib\libultra-audio\src\csplayer.cpp" />
     <ClCompile Include="lib\libultra-audio\src\cspplay.cpp" />
+    <ClCompile Include="lib\libultra-audio\src\cspsendmidi.cpp" />
     <ClCompile Include="lib\libultra-audio\src\cspsetbank.cpp" />
     <ClCompile Include="lib\libultra-audio\src\cspsetseq.cpp" />
     <ClCompile Include="lib\libultra-audio\src\cspstop.cpp" />
@@ -140,6 +141,9 @@
     <VcpkgEnabled>true</VcpkgEnabled>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <VcpkgUseStatic>true</VcpkgUseStatic>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

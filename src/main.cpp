@@ -483,6 +483,8 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
     int validTracks = 0;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     int bankNumber = 0;
+    int channelNumber = 0;
+    int pChannelNumber = 0;
     float scrubber = 0;
     float volume = 1.0f;
     ImVec2 trackScroll = { 0.f, 0.f };
@@ -494,6 +496,11 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
     std::string bankFile, wavetableFile, seqFile;
     Midi64 currentMidi;
 
+    /* Keyboard Midi State */
+    bool midiKeysW[53] = { false };
+    bool midiKeysB[53] = { false };
+    bool pmidiKeysW[53] = { false };
+    bool pmidiKeysB[53] = { false };
     /* Init Synth */
     startaudiothread();
 
@@ -675,13 +682,25 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
           ImU32 White = IM_COL32(255, 255, 255, 255);
           ImU32 Red = IM_COL32(255, 0, 0, 255);
           ImGui::Begin("Keyboard");
+          ImGui::Text("Channel: ");
+          ImGui::SameLine();
+          ImGui::SliderInt("##channel", &channelNumber, 0x00, 0x0F, "0x%01X");
+          if (ImGui::IsWindowFocused()) {
+             midiKeysW[5] =  ImGui::IsKeyDown(ImGuiKey_Z);
+             midiKeysW[6] =  ImGui::IsKeyDown(ImGuiKey_X);
+             midiKeysW[7] =  ImGui::IsKeyDown(ImGuiKey_C);
+             midiKeysW[8] =  ImGui::IsKeyDown(ImGuiKey_V);
+             midiKeysW[9] =  ImGui::IsKeyDown(ImGuiKey_B);
+             midiKeysW[10] = ImGui::IsKeyDown(ImGuiKey_N);
+             midiKeysW[11] = ImGui::IsKeyDown(ImGuiKey_M);
+          }
           ImDrawList* draw_list = ImGui::GetWindowDrawList();
           ImVec2 p = ImGui::GetCursorScreenPos();
           int width = 20;
           int cur_key = 21;
           for (int key = 0; key < 52; key++) {
              ImU32 col = White;
-             if (false) {
+             if (midiKeysW[key]) {
                 col = Red;
              }
              draw_list->AddRectFilled(
@@ -703,7 +722,7 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
              bool black = (!((key - 1) % 7 == 0 || (key - 1) % 7 == 3) && key != 51);
              if (black) {
                 ImU32 col = Black;
-                if (false) {
+                if (midiKeysB[key]) {
                    col = Red;
                 }
                 draw_list->AddRectFilled(
@@ -725,6 +744,24 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
        }
 
        if (currState == PLAYBACK_READY) {
+          if (pChannelNumber != channelNumber) {
+             Midi64Event programChange = { AL_MIDI_ProgramChange,  channelNumber};
+             sendevent(programChange);
+             pChannelNumber = channelNumber;
+          }
+
+          for (int key = 0; key < 52; key++) {
+             if (!pmidiKeysW[key] && midiKeysW[key]) {
+                Midi64Event keyhit = { AL_MIDI_NoteOn,  key + 60, 100 };
+                sendevent(keyhit);
+             }
+             else if (pmidiKeysW[key] && !midiKeysW[key]) {
+                Midi64Event keyrelease = { AL_MIDI_NoteOff,  key + 60, 100 };
+                sendevent(keyrelease);
+             }
+             pmidiKeysW[key] = midiKeysW[key];
+          }
+
           if (prevEnabledTracks != enabledTracks) {
              setEnabledTracks(enabledTracks);
           }

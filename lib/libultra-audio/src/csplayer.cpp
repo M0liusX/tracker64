@@ -578,6 +578,9 @@ static void __CSPHandleMIDIMsg(ALCSPlayer *seqp, ALEvent *event)
         case (AL_MIDI_NoteOff):
             vstate = __lookupVoice((ALSeqPlayer*)seqp, key, chan);
             assert(vstate && "csplayer: ERR_ALSEQP_OFF_VOICE");
+            if (!vstate) {
+               return;
+            }
        //     ALFlagFailIf(!vstate, seqp->debugFlags & NOTE_OFF_ERR_MASK,
 		     //ERR_ALSEQP_OFF_VOICE );
 

@@ -11,6 +11,7 @@
 #define FRAME_TIME (CLOCKS_PER_SEC / (60.0f))
 
 #include "synth64.hpp"
+void audioFrame();
 
 /* WAV Header */
 typedef struct WAV_HEADER {
@@ -89,8 +90,10 @@ static me::MeAudio* audio; // audio playback backend
 static bool initialized = false;
 
 static ALHeap audioHp;
+// static ALHeap midiHp;
 static ALGlobals audioGlobals;
 static ALCSPlayer cseqPlayer;
+static ALCSPlayer midiPlayer;
 static Acmd audioCmdList[AUDIO_CLIST_SIZE];
 
 static u8* imem;
@@ -179,6 +182,17 @@ void startaudiothread() {
 void resetBank(int bank) {
    ALBankFile* bankFile = (ALBankFile*)getRamObject(ctlFileAddress);
    alCSPSetBank(&cseqPlayer, bankFile->getBank(bank));
+
+   /* If initialized change bank of virtual keyboard.
+    * This requires a fake audioFrame to go from stopping to stopped state.
+    */
+   if (initialized) {
+      alCSPStop(&midiPlayer);
+      audioFrame(); audioFrame(); audioFrame(); audioFrame(); audioFrame();
+      alCSPSetBank(&midiPlayer, bankFile->getBank(bank));
+      alCSPPlay(&midiPlayer);
+   }
+
    /* Error checking */
    if (bank >= bankFile->bankCount) {
       std::cout << "ERROR: Invalid Bank!" << std::endl;
@@ -224,17 +238,23 @@ void init(std::string seqPath, std::string bankPath, std::string wavetablePath, 
    commandListAddress = (tblFileAddress + tblFile.size() + 0xF) & (~0xF);
    audioBufferAddress = ((commandListAddress + AUDIO_CLIST_SIZE * sizeof(Acmd)) + 0xF) & (~0xF);
    audioHeapAddress = ((audioBufferAddress + 4 * AUDIO_BUFSZ) + 0xF) & (~0xF);
+   //midiAudioHeapAddress = ((audioHeapAddress + AUDIO_HEAP_SIZE) + 0xF)& (~0xF);
    assert((AUDIO_HEAP_SIZE + audioHeapAddress) < 0x1000000); // do not exceed 16MB ram size for now.
    memcpy(rdram + seqFileAddress, seqFile.data(), seqFile.size());
    memcpy(rdram + ctlFileAddress, ctlFile.data(), ctlFile.size());
    memcpy(rdram + tblFileAddress, tblFile.data(), tblFile.size());
 
-   /* Initialize Audio Heap */
+   /* Initialize Audio Heaps */
    audioHp = {};
    audioHp.base = rdram + audioHeapAddress;
    audioHp.cur = rdram + audioHeapAddress;
    audioHp.count = 0;
    audioHp.len = AUDIO_HEAP_SIZE;
+   //midiHp = {};
+   //midiHp.base = rdram + midiAudioHeapAddress;
+   //midiHp.cur = rdram + midiAudioHeapAddress;
+   //midiHp.count = 0;
+   //midiHp.len = AUDIO_HEAP_SIZE;
    s32 audioRate = 0x02E6D354 / (s32)(0x02E6D354 / (f32)AUDIO_FREQUENCY - .5f);
    scfg = {
        .maxVVoices = AUDIO_MAX_VOICES,
@@ -261,15 +281,19 @@ void init(std::string seqPath, std::string bankPath, std::string wavetablePath, 
       .stopOsc = nullptr,
    };
    cseqPlayer = {};
+   midiPlayer = {};
    alCSPNew(&cseqPlayer, &cscfg);
+   alCSPNew(&midiPlayer, &cscfg);
 
    alCSeqNew(&cseq, rdram + seqFileAddress);
    validTracks = cseq.validTracks;
    alCSPSetSeq(&cseqPlayer, &cseq);
+   alCSPSetSeq(&midiPlayer, 0);
 
    ALBankFile* bankFile = (ALBankFile*)getRamObject(ctlFileAddress);
    alBnkfNew(ctlFileAddress, tblFileAddress);
    alCSPSetBank(&cseqPlayer, bankFile->getBank(bank));
+   alCSPSetBank(&midiPlayer, bankFile->getBank(bank));
    alCSeqGetLoc(&cseq, &start);
    alCSeqGetFinalMarker(&cseq, &end);
    initialized = true;
@@ -279,6 +303,14 @@ void init(std::string seqPath, std::string bankPath, std::string wavetablePath, 
       std::cout << "ERROR: Invalid Bank!" << std::endl;
       initialized = false;
    }
+   else {
+      alCSPPlay(&midiPlayer);
+   }
+}
+
+void sendevent(Midi64Event e) {
+   if (!initialized) { return; }
+   alCSPSendMidi(&midiPlayer, 0, e.type, e.key, e.velocity);
 }
 
 void audioFrame() {

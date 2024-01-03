@@ -168,6 +168,9 @@
     <ClCompile Include="src\seqparse.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="lib\libultra-audio\src\cspsendmidi.cpp">
+      <Filter>libultra</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lib\libultra-audio\PR\os_internal.h">

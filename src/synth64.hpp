@@ -8,6 +8,12 @@
 
 #include <string>
 
+typedef struct {
+   int type;
+   int key;
+   int velocity;
+} Midi64Event;
+
 /* TODO: Seperate audio callback mechanism from synth. */
 void startaudiothread();
 
@@ -21,6 +27,7 @@ void stop();
 void record(std::string name);
 void scrub(float pos);
 void getloc(float& pos); // TODO: Maybe let application keep track of position? Non-trivial with a blackbox synth.
+void sendevent(Midi64Event e);
 
 /* State change actions! */
 void setEnabledTracks(int enabledTracks);
