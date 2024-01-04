@@ -486,6 +486,7 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
     int validTracks = 0;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     int bankNumber = 0;
+    Bank64 currentBank;
     float scrubber = 0;
     float volume = 1.0f;
     ImVec2 trackScroll = { 0.f, 0.f };
@@ -674,7 +675,7 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
 
        // TODO: Draw MIDI Piano Input
        if (true) {
-          RenderVirtualKeyboard();
+          RenderVirtualKeyboard(&currentBank);
        }
 
        if (currState == PLAYBACK_READY) {
@@ -683,12 +684,12 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
              sendevent(programChange);
           }
 
-          for (int key = 0; key < 52; key++) {
-             if (GetKeyHit(key)) {
+          for (int key = 0; key < 255; key++) {
+             if (GetKeyHit(key) && IsMapped(&currentBank, key)) {
                 Midi64Event keyhit = { AL_MIDI_NoteOn,  key, 100 };
                 sendevent(keyhit);
              }
-             else if (GetKeyReleased(key)) {
+             else if (GetKeyReleased(key) && IsMapped(&currentBank, key)) {
                 Midi64Event keyrelease = { AL_MIDI_NoteOff,  key, 100 };
                 sendevent(keyrelease);
              }
@@ -727,6 +728,7 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
             if ((currState != PLAYBACK_READY) || playing) { ImGui::BeginDisabled(); }
             if (ImGui::Button("Reset Bank")) {
                resetBank(bankNumber);
+               getBankData(bankNumber, &currentBank);
             }
             if ((currState != PLAYBACK_READY) || playing) { ImGui::EndDisabled(); }
 
@@ -789,6 +791,7 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
                      currentMidi = Midi64();
                      currentMidi.Parse(seqFile);
                      init(seqFile, bankFile, wavetableFile, bankNumber);
+                     getBankData(bankNumber, &currentBank);
                      validTracks = getValidTracks();
                      playing = false;
                      currState = PLAYBACK_READY;

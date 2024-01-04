@@ -227,5 +227,8 @@
     <ClInclude Include="src\gui\virtualkeyboard.hpp">
       <Filter>gui</Filter>
     </ClInclude>
+    <ClInclude Include="src\bank64.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

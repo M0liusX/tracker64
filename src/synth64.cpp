@@ -11,6 +11,7 @@
 #define FRAME_TIME (CLOCKS_PER_SEC / (60.0f))
 
 #include "synth64.hpp"
+#include "bank64.hpp"
 void audioFrame();
 
 /* WAV Header */
@@ -145,6 +146,30 @@ void setEnabledTracks(int enabledTracks) {
 
 int getValidTracks() {
    return validTracks;
+}
+
+void getBankData(int bankNum, Bank64* bank64) {
+   bank64->instruments.clear();
+   if (!initialized) {
+      bank64->instruments.push_back(Inst64());
+      return;
+   }
+
+   ALBankFile* bankFile = (ALBankFile*)getRamObject(ctlFileAddress);
+   ALBank* bank = bankFile->getBank(bankNum);
+   for (int i = 0; i < bank->instCount; i++) {
+      Inst64 inst;
+      ALInstrument* alInst = bank->getInstrument(i);
+      for (int s = 0; s < alInst->soundCount; s++) {
+         Sound64 sound;
+         ALSound* alSound = alInst->getSound(s);
+         ALKeyMap* alKeymap = alSound->getKeyMap();
+         sound.keymap.keyMin = alKeymap->keyMin;
+         sound.keymap.keyMax = alKeymap->keyMax;
+         inst.sounds.push_back(sound);
+      }
+      bank64->instruments.push_back(inst);
+   }
 }
 
 void scrub(float position) {

@@ -13,6 +13,21 @@ bool IsBlack(int key) {
    return (!((key - 1) % 7 == 0 || (key - 1) % 7 == 3) && key != 51);
 }
 
+bool IsMapped(Bank64* bank, int key) {
+   if (instrumentNum >= bank->instruments.size()) {
+      return false;
+   }
+
+   Inst64& inst = bank->instruments[instrumentNum];
+   for (Sound64& s : inst.sounds) {
+      if (s.keymap.keyMax >= key &&
+         s.keymap.keyMin <= key) {
+         return true;
+      }
+   }
+   return false;
+}
+
 void UpdateKeys() {
    // White Bottom
    midiKeyStates[48 + octaveBias * 12] = ImGui::IsKeyDown(ImGuiKey_Z);
@@ -48,10 +63,14 @@ void UpdateKeys() {
    midiKeyStates[70 + octaveBias * 12] = ImGui::IsKeyDown(ImGuiKey_7);
 }
 
-void RenderVirtualKeyboard() {
-   ImU32 Black = IM_COL32(0, 0, 0, 255);
-   ImU32 White = IM_COL32(255, 255, 255, 255);
-   ImU32 Red = IM_COL32(255, 0, 0, 255);
+
+
+void RenderVirtualKeyboard(Bank64* bank) {
+   ImU32 Black    = IM_COL32(0, 0, 0, 255);
+   ImU32 White    = IM_COL32(255, 255, 255, 255);
+   ImU32 Red      = IM_COL32(255, 0, 0, 255);
+   ImU32 Grey     = IM_COL32(150, 150, 150, 255);
+   ImU32 DarkGrey = IM_COL32(50, 50, 50, 255);
    ImGui::Begin("Keyboard");
 
 
@@ -59,7 +78,7 @@ void RenderVirtualKeyboard() {
    pInstrumentNum = instrumentNum;
    ImGui::Text("Channel: ");
    ImGui::SameLine();
-   ImGui::SliderInt("##channel", &instrumentNum, 0x00, 0x0F, "0x%01X");
+   ImGui::SliderInt("##channel", &instrumentNum, 0x00, bank->instruments.size() - 1, "0x%01X");
 
    /* Update Octave Bias */
    ImGui::Text("Octave Bias: ");
@@ -83,6 +102,10 @@ void RenderVirtualKeyboard() {
       if (midiKeyStates[cur_key]) {
          col = Red;
       }
+      if (!IsMapped(bank, cur_key)) {
+         col = Grey;
+      }
+
       draw_list->AddRectFilled(
          ImVec2(p.x + key * width, p.y),
          ImVec2(p.x + key * width + width, p.y + 120),
@@ -102,6 +125,9 @@ void RenderVirtualKeyboard() {
          ImU32 col = Black;
          if (midiKeyStates[cur_key]) {
             col = Red;
+         }
+         if (!IsMapped(bank, cur_key)) {
+            col = DarkGrey;
          }
          draw_list->AddRectFilled(
             ImVec2(p.x + key * width + width * 3 / 4, p.y),

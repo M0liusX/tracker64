@@ -7,12 +7,17 @@
 #define SYNTH64_HPP
 
 #include <string>
+#include "bank64.hpp"
 
 typedef struct {
    int type;
    int key;
    int velocity;
 } Midi64Event;
+
+//typedef struct {
+//   int instrumentCount
+//} Bank64;
 
 /* TODO: Seperate audio callback mechanism from synth. */
 void startaudiothread();
@@ -33,4 +38,6 @@ void sendevent(Midi64Event e);
 void setEnabledTracks(int enabledTracks);
 int getValidTracks();
 void resetBank(int bank);
+
+void getBankData(int bankNum, Bank64* bank64);
 #endif
