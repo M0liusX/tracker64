@@ -6,6 +6,8 @@
 typedef struct {
    int keyMin;
    int keyMax;
+   int velocityMin;
+   int velocityMax;
 } KeyMap64;
 
 typedef struct {

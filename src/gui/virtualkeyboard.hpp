@@ -9,7 +9,8 @@ bool GetInstrumentChanged();
 int GetInstrument();
 bool GetKeyHit(int key);
 bool GetKeyReleased(int key);
+int GetVolume();
 
-bool IsMapped(Bank64*, int key);
+int IsMapped(Bank64*, int key);
 
 #endif

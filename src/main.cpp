@@ -625,7 +625,7 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
                if ((command->status & 0xf0) == AL_MIDI_NoteOn) {
                   std::vector<u8> encDuration;
                   encDuration.insert(encDuration.begin(), command->bytes.begin() + 2, command->bytes.end());
-                  float pitch = (0xFF - command->bytes[0]) * 10 - 5;
+                  float pitch = (0xFE - command->bytes[0]) * 10 - 5;
                   u64 duration = Track64::DecodeDelta(encDuration);
                   //std::cout << "NOTE: [pitch]" + std::to_string(command->bytes[0]) << std::endl;
                   //std::cout << "NOTE: [delta]" + std::to_string(command->delta) << std::endl;
@@ -685,13 +685,19 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
           }
 
           for (int key = 0; key < 255; key++) {
-             if (GetKeyHit(key) && IsMapped(&currentBank, key)) {
-                Midi64Event keyhit = { AL_MIDI_NoteOn,  key, 100 };
-                sendevent(keyhit);
+             if (GetKeyHit(key)) {
+                int velocity = IsMapped(&currentBank, key);
+                if (velocity > 0) {
+                   Midi64Event keyhit = { AL_MIDI_NoteOn,  key, velocity };
+                   sendevent(keyhit);
+                }
              }
-             else if (GetKeyReleased(key) && IsMapped(&currentBank, key)) {
-                Midi64Event keyrelease = { AL_MIDI_NoteOff,  key, 100 };
-                sendevent(keyrelease);
+             else if (GetKeyReleased(key)) {
+                int velocity = IsMapped(&currentBank, key);
+                if (velocity > 0) {
+                   Midi64Event keyrelease = { AL_MIDI_NoteOff,  key, 0 };
+                   sendevent(keyrelease);
+                }
              }
           }
 

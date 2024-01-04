@@ -166,6 +166,8 @@ void getBankData(int bankNum, Bank64* bank64) {
          ALKeyMap* alKeymap = alSound->getKeyMap();
          sound.keymap.keyMin = alKeymap->keyMin;
          sound.keymap.keyMax = alKeymap->keyMax;
+         sound.keymap.velocityMin = alKeymap->velocityMin;
+         sound.keymap.velocityMax = alKeymap->velocityMax;
          inst.sounds.push_back(sound);
       }
       bank64->instruments.push_back(inst);

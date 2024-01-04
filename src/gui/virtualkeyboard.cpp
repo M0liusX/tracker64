@@ -1,6 +1,8 @@
 #include "virtualkeyboard.hpp"
 #include "imgui.h"
 
+#include <algorithm>
+
 /* Keyboard Midi State */
 int pmidiKeyStates[256] = { false };
 int midiKeyStates[256]  = { false };
@@ -8,24 +10,26 @@ int midiKeyStates[256]  = { false };
 int instrumentNum = 0;
 int pInstrumentNum = 0;
 
+int volume = 100;
+
 int octaveBias = 0;
 bool IsBlack(int key) {
    return (!((key - 1) % 7 == 0 || (key - 1) % 7 == 3) && key != 51);
 }
 
-bool IsMapped(Bank64* bank, int key) {
+int IsMapped(Bank64* bank, int key) {
    if (instrumentNum >= bank->instruments.size()) {
-      return false;
+      return 0;
    }
 
    Inst64& inst = bank->instruments[instrumentNum];
    for (Sound64& s : inst.sounds) {
       if (s.keymap.keyMax >= key &&
          s.keymap.keyMin <= key) {
-         return true;
+         return std::clamp(volume, s.keymap.velocityMin, s.keymap.velocityMax);
       }
    }
-   return false;
+   return 0;
 }
 
 void UpdateKeys() {
@@ -63,6 +67,11 @@ void UpdateKeys() {
    midiKeyStates[70 + octaveBias * 12] = ImGui::IsKeyDown(ImGuiKey_7);
 }
 
+void DisableKeys() {
+   for (int k = 0; k < 255; k++) {
+      midiKeyStates[k] = 0;
+   }
+}
 
 
 void RenderVirtualKeyboard(Bank64* bank) {
@@ -78,12 +87,17 @@ void RenderVirtualKeyboard(Bank64* bank) {
    pInstrumentNum = instrumentNum;
    ImGui::Text("Channel: ");
    ImGui::SameLine();
-   ImGui::SliderInt("##channel", &instrumentNum, 0x00, bank->instruments.size() - 1, "0x%01X");
+   ImGui::SliderInt("##vkchannel", &instrumentNum, 0x00, bank->instruments.size() - 1, "0x%01X");
+
+   /* Update Octave Bias */
+   ImGui::Text("Volume: ");
+   ImGui::SameLine();
+   ImGui::SliderInt("##vkvolume", &volume, 0x00, 0xFF, "0x%02X");
 
    /* Update Octave Bias */
    ImGui::Text("Octave Bias: ");
    ImGui::SameLine();
-   ImGui::SliderInt("##octave", &octaveBias, -2, 3, "%01");
+   ImGui::SliderInt("##vkoctave", &octaveBias, -2, 3, "%01");
 
    /* Update key values */
    for (int i = 0; i < 256; i++) {
@@ -91,6 +105,9 @@ void RenderVirtualKeyboard(Bank64* bank) {
    }
    if (ImGui::IsWindowFocused()) {
       UpdateKeys();
+   }
+   else {
+      DisableKeys();
    }
 
    ImDrawList* draw_list = ImGui::GetWindowDrawList();
@@ -102,7 +119,7 @@ void RenderVirtualKeyboard(Bank64* bank) {
       if (midiKeyStates[cur_key]) {
          col = Red;
       }
-      if (!IsMapped(bank, cur_key)) {
+      if (IsMapped(bank, cur_key) == 0) {
          col = Grey;
       }
 
@@ -126,7 +143,7 @@ void RenderVirtualKeyboard(Bank64* bank) {
          if (midiKeyStates[cur_key]) {
             col = Red;
          }
-         if (!IsMapped(bank, cur_key)) {
+         if (IsMapped(bank, cur_key) == 0) {
             col = DarkGrey;
          }
          draw_list->AddRectFilled(
@@ -161,4 +178,8 @@ bool GetKeyHit(int key) {
 
 bool GetKeyReleased(int key) {
    return pmidiKeyStates[key] && !midiKeyStates[key];
+}
+
+int GetVolume() {
+   return volume;
 }
