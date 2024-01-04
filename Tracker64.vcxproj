@@ -65,6 +65,7 @@
     <ClCompile Include="lib\libultra-audio\src\synstartvoiceparam.cpp" />
     <ClCompile Include="lib\libultra-audio\src\synstopvoice.cpp" />
     <ClCompile Include="lib\libultra-audio\src\synthesizer.cpp" />
+    <ClCompile Include="src\gui\virtualkeyboard.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\seqparse.cpp" />
     <ClCompile Include="src\synth64.cpp" />
@@ -83,6 +84,7 @@
     <ClInclude Include="lib\libultra-audio\PR\os_internal.h" />
     <ClInclude Include="src\audio\MeAudio.hpp" />
     <ClInclude Include="src\audio\miniaudio.h" />
+    <ClInclude Include="src\gui\virtualkeyboard.hpp" />
     <ClInclude Include="src\seqparse.hpp" />
     <ClInclude Include="src\synth64.hpp" />
   </ItemGroup>

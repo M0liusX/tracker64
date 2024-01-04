@@ -33,6 +33,9 @@ PmDeviceID deviceID;
 PortMidiStream* stream;
 PmEvent buffer[1024];
 
+// TODO: refactor gui
+#include "gui/virtualkeyboard.hpp"
+
 // [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
 // To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
 // Your own project should not be affected, as you are likely to link with a newer binary of GLFW that is adequate for your version of Visual Studio.
@@ -483,8 +486,6 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
     int validTracks = 0;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     int bankNumber = 0;
-    int channelNumber = 0;
-    int pChannelNumber = 0;
     float scrubber = 0;
     float volume = 1.0f;
     ImVec2 trackScroll = { 0.f, 0.f };
@@ -496,11 +497,6 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
     std::string bankFile, wavetableFile, seqFile;
     Midi64 currentMidi;
 
-    /* Keyboard Midi State */
-    bool midiKeysW[53] = { false };
-    bool midiKeysB[53] = { false };
-    bool pmidiKeysW[53] = { false };
-    bool pmidiKeysB[53] = { false };
     /* Init Synth */
     startaudiothread();
 
@@ -678,88 +674,24 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
 
        // TODO: Draw MIDI Piano Input
        if (true) {
-          ImU32 Black = IM_COL32(0, 0, 0, 255);
-          ImU32 White = IM_COL32(255, 255, 255, 255);
-          ImU32 Red = IM_COL32(255, 0, 0, 255);
-          ImGui::Begin("Keyboard");
-          ImGui::Text("Channel: ");
-          ImGui::SameLine();
-          ImGui::SliderInt("##channel", &channelNumber, 0x00, 0x0F, "0x%01X");
-          if (ImGui::IsWindowFocused()) {
-             midiKeysW[5] =  ImGui::IsKeyDown(ImGuiKey_Z);
-             midiKeysW[6] =  ImGui::IsKeyDown(ImGuiKey_X);
-             midiKeysW[7] =  ImGui::IsKeyDown(ImGuiKey_C);
-             midiKeysW[8] =  ImGui::IsKeyDown(ImGuiKey_V);
-             midiKeysW[9] =  ImGui::IsKeyDown(ImGuiKey_B);
-             midiKeysW[10] = ImGui::IsKeyDown(ImGuiKey_N);
-             midiKeysW[11] = ImGui::IsKeyDown(ImGuiKey_M);
-          }
-          ImDrawList* draw_list = ImGui::GetWindowDrawList();
-          ImVec2 p = ImGui::GetCursorScreenPos();
-          int width = 20;
-          int cur_key = 21;
-          for (int key = 0; key < 52; key++) {
-             ImU32 col = White;
-             if (midiKeysW[key]) {
-                col = Red;
-             }
-             draw_list->AddRectFilled(
-                ImVec2(p.x + key * width, p.y),
-                ImVec2(p.x + key * width + width, p.y + 120),
-                col, 0, ImDrawCornerFlags_All);
-             draw_list->AddRect(
-                ImVec2(p.x + key * width, p.y),
-                ImVec2(p.x + key * width + width, p.y + 120),
-                Black, 0, ImDrawCornerFlags_All);
-             cur_key++;
-             // has black?
-             if ((!((key - 1) % 7 == 0 || (key - 1) % 7 == 3) && key != 51)) {
-                cur_key++;
-             }
-          }
-          cur_key = 22;
-          for (int key = 0; key < 52; key++) {
-             bool black = (!((key - 1) % 7 == 0 || (key - 1) % 7 == 3) && key != 51);
-             if (black) {
-                ImU32 col = Black;
-                if (midiKeysB[key]) {
-                   col = Red;
-                }
-                draw_list->AddRectFilled(
-                   ImVec2(p.x + key * width + width * 3 / 4, p.y),
-                   ImVec2(p.x + key * width + width * 5 / 4 + 1, p.y + 80),
-                   col, 0, ImDrawCornerFlags_All);
-                draw_list->AddRect(
-                   ImVec2(p.x + key * width + width * 3 / 4, p.y),
-                   ImVec2(p.x + key * width + width * 5 / 4 + 1, p.y + 80),
-                   Black, 0, ImDrawCornerFlags_All);
-
-                cur_key += 2;
-             }
-             else {
-                cur_key++;
-             }
-          }
-          ImGui::End();
+          RenderVirtualKeyboard();
        }
 
        if (currState == PLAYBACK_READY) {
-          if (pChannelNumber != channelNumber) {
-             Midi64Event programChange = { AL_MIDI_ProgramChange,  channelNumber};
+          if (GetInstrumentChanged()) {
+             Midi64Event programChange = { AL_MIDI_ProgramChange,  GetInstrument()};
              sendevent(programChange);
-             pChannelNumber = channelNumber;
           }
 
           for (int key = 0; key < 52; key++) {
-             if (!pmidiKeysW[key] && midiKeysW[key]) {
-                Midi64Event keyhit = { AL_MIDI_NoteOn,  key + 60, 100 };
+             if (GetKeyHit(key)) {
+                Midi64Event keyhit = { AL_MIDI_NoteOn,  key, 100 };
                 sendevent(keyhit);
              }
-             else if (pmidiKeysW[key] && !midiKeysW[key]) {
-                Midi64Event keyrelease = { AL_MIDI_NoteOff,  key + 60, 100 };
+             else if (GetKeyReleased(key)) {
+                Midi64Event keyrelease = { AL_MIDI_NoteOff,  key, 100 };
                 sendevent(keyrelease);
              }
-             pmidiKeysW[key] = midiKeysW[key];
           }
 
           if (prevEnabledTracks != enabledTracks) {
