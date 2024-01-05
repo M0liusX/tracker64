@@ -618,7 +618,7 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
                if ((command->status & 0xf0) == AL_MIDI_NoteOn) {
                   std::vector<u8> encDuration;
                   encDuration.insert(encDuration.begin(), command->bytes.begin() + 2, command->bytes.end());
-                  float pitch = (0xFE - command->bytes[0]) * 10 - 5;
+                  float pitch = (0x100 - command->bytes[0]) * 10 - 5;
                   u64 duration = Track64::DecodeDelta(encDuration);
                   //std::cout << "NOTE: [pitch]" + std::to_string(command->bytes[0]) << std::endl;
                   //std::cout << "NOTE: [delta]" + std::to_string(command->delta) << std::endl;
