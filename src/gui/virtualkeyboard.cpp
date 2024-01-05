@@ -1,11 +1,18 @@
 #include "virtualkeyboard.hpp"
+#include "midi.hpp"
 #include "imgui.h"
 
 #include <algorithm>
+#include <functional>
+#include <iostream>
+
+/* Midi Keyboard Handler */
+Midi midi;
 
 /* Keyboard Midi State */
 int pmidiKeyStates[256] = { false };
 int midiKeyStates[256]  = { false };
+int keyboardMidiStates[256] = { false };
 
 int instrumentNum = 0;
 int pInstrumentNum = 0;
@@ -13,6 +20,7 @@ int pInstrumentNum = 0;
 int volume = 100;
 
 int octaveBias = 0;
+
 bool IsBlack(int key) {
    return (!((key - 1) % 7 == 0 || (key - 1) % 7 == 3) && key != 51);
 }
@@ -33,6 +41,12 @@ int IsMapped(Bank64* bank, int key) {
 }
 
 void UpdateKeys() {
+   // Update based on midi keyboard
+   midi.poll([](PmTimestamp timestamp, uint8_t status, PmMessage Data1, PmMessage Data2) {
+      if ((status & 0xF0) == 0x90) keyboardMidiStates[Data1] = true;
+      if ((status & 0xF0) == 0x80) keyboardMidiStates[Data1] = false;
+      }, true);
+
    // White Bottom
    midiKeyStates[48 + octaveBias * 12] = ImGui::IsKeyDown(ImGuiKey_Z);
    midiKeyStates[50 + octaveBias * 12] = ImGui::IsKeyDown(ImGuiKey_X);
@@ -70,6 +84,7 @@ void UpdateKeys() {
 void DisableKeys() {
    for (int k = 0; k < 255; k++) {
       midiKeyStates[k] = 0;
+      keyboardMidiStates[k] = 0;
    }
 }
 
@@ -101,7 +116,7 @@ void RenderVirtualKeyboard(Bank64* bank) {
 
    /* Update key values */
    for (int i = 0; i < 256; i++) {
-      pmidiKeyStates[i] = midiKeyStates[i];
+      pmidiKeyStates[i] = midiKeyStates[i] | keyboardMidiStates[i];
    }
    if (ImGui::IsWindowFocused()) {
       UpdateKeys();
@@ -116,7 +131,7 @@ void RenderVirtualKeyboard(Bank64* bank) {
    int cur_key = 21;
    for (int key = 0; key < 52; key++) {
       ImU32 col = White;
-      if (midiKeyStates[cur_key]) {
+      if (midiKeyStates[cur_key] | keyboardMidiStates[cur_key]) {
          col = Red;
       }
       if (IsMapped(bank, cur_key) == 0) {
@@ -140,7 +155,7 @@ void RenderVirtualKeyboard(Bank64* bank) {
    for (int key = 0; key < 52; key++) {
       if (IsBlack(key)) {
          ImU32 col = Black;
-         if (midiKeyStates[cur_key]) {
+         if (midiKeyStates[cur_key] | keyboardMidiStates[cur_key]) {
             col = Red;
          }
          if (IsMapped(bank, cur_key) == 0) {
@@ -173,11 +188,11 @@ int GetInstrument() {
 }
 
 bool GetKeyHit(int key) {
-   return !pmidiKeyStates[key] && midiKeyStates[key];
+   return !pmidiKeyStates[key] && (midiKeyStates[key] | keyboardMidiStates[key]);
 }
 
 bool GetKeyReleased(int key) {
-   return pmidiKeyStates[key] && !midiKeyStates[key];
+   return pmidiKeyStates[key] && !(midiKeyStates[key] | keyboardMidiStates[key]);
 }
 
 int GetVolume() {

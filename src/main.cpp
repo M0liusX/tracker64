@@ -26,13 +26,6 @@
 #include "synth64.hpp"
 #include "seqparse.hpp"
 
-// TODO: midi keyboard input
-#include <portmidi.h>
-#include <porttime.h>
-PmDeviceID deviceID;
-PortMidiStream* stream;
-PmEvent buffer[1024];
-
 // TODO: refactor gui
 #include "gui/virtualkeyboard.hpp"
 
