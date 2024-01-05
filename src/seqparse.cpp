@@ -1,5 +1,4 @@
 #include "seqparse.hpp"
-#include <iostream>
 #include <fstream>
 #include <cassert>
 
@@ -114,22 +113,48 @@ bool Midi64::ParseCommand(u32 track) {
       else if (etype == AL_CMIDI_LOOPSTART_CODE) {
          u8 b1 = GetByte(track); u8 b2 = GetByte(track);
          Command64* command = new Command64();
+         command->status = AL_MIDI_Meta;
+         command->bytes.push_back(AL_CMIDI_LOOPSTART_CODE);
+         command->bytes.push_back(b1);
+         command->bytes.push_back(b2);
          command->delta = delta;
          AddCommand(track, command);
-         // assert(false);
       }
       else if (etype == AL_CMIDI_LOOPEND_CODE) {
          u8 b1 = GetByte(track); u8 b2 = GetByte(track); u8 b3 = GetByte(track);
          u8 b4 = GetByte(track); u8 b5 = GetByte(track); u8 b6 = GetByte(track);
+
+         /* Generate Uncompressed Offset 
+          * This is required because we are saving
+          * commands without utilizing cseq blocks
+          */
+         u32 offset = GetLoopOffset(track) + Track64::EncodeDelta(delta).size() + 8;
+         b3 = (0xFF000000 & offset) >> 24;
+         b4 = (0x00FF0000 & offset) >> 16;
+         b5 = (0x0000FF00 & offset) >> 8;
+         b6 = (0x000000FF & offset);
+
          Command64* command = new Command64();
+         command->status = AL_MIDI_Meta;
+         command->bytes.push_back(AL_CMIDI_LOOPEND_CODE);
+         command->bytes.push_back(b1);
+         command->bytes.push_back(b2);
+         command->bytes.push_back(b3);
+         command->bytes.push_back(b4);
+         command->bytes.push_back(b5);
+         command->bytes.push_back(b6);
          command->delta = delta;
          AddCommand(track, command);
-         // assert(false);
       }
       else if (etype == AL_MIDI_META_EOT) {
          lstatus = 0;
+         Command64* command = new Command64();
+         command->status = AL_MIDI_Meta;
+         command->bytes.push_back(AL_MIDI_META_EOT);
+         command->bytes.push_back(0);
+         command->delta = delta;
+         AddCommand(track, command);
          return true;
-         //assert(false);
       }
       else {
          assert(false);
@@ -170,21 +195,29 @@ bool Midi64::ParseCommand(u32 track) {
       }
       else if (mesg == AL_MIDI_ProgramChange) {
          Command64* command = new Command64();
+         command->status = status;
+         command->bytes.push_back(byte1);
          command->delta = delta;
          AddCommand(track, command);
-         // assert(false);
       }
       else if (mesg == AL_MIDI_ControlChange) {
          Command64* command = new Command64();
+         command->status = status;
+         command->bytes.push_back(byte1);
+         command->bytes.push_back(byte2);
          command->delta = delta;
          AddCommand(track, command);
-         // assert(false);
       }
       else if (mesg == AL_MIDI_PitchBendChange) {
          Command64* command = new Command64();
+         command->status = status;
+         command->bytes.push_back(byte1);
+         command->bytes.push_back(byte2);
          command->delta = delta;
          AddCommand(track, command);
-         // assert(false);
+      }
+      else {
+         assert(false);
       }
    }
 
@@ -257,4 +290,73 @@ void Track64::AddCommand(Command64* command) {
       extra = 1;
    }
    size += extra + command->bytes.size() + EncodeDelta(command->delta).size();
+}
+
+void Track64::Save(std::ofstream& outFile) {
+   u8 lstatus = 0;
+   for (Command64* command : commands) {
+      std::vector<u8> deltaBytes = EncodeDelta(command->delta);
+      outFile.write(reinterpret_cast<char*>(deltaBytes.data()), deltaBytes.size());
+
+      u8 mesg = command->status;
+      if (mesg == AL_MIDI_Meta) {
+         outFile.write(reinterpret_cast<const char*>(&mesg), sizeof(mesg));
+         lstatus = 0;
+      }
+      else if (lstatus != mesg) {
+         outFile.write(reinterpret_cast<const char*>(&mesg), sizeof(mesg));
+         lstatus = mesg;
+      }
+      outFile.write(reinterpret_cast<char*>(command->bytes.data()), command->bytes.size());
+   }
+
+}
+
+void Midi64::Save(std::string file) {
+   // Open a file for writing (truncating the existing file or creating a new one)
+   std::ofstream outFile(file, std::ios::binary);
+
+   if (!outFile.is_open()) {
+      std::cerr << "Error opening the file for writing." << std::endl;
+      assert(false);
+      return;
+   }
+
+   u32 offset = 68;
+   for (Track64* track : tracks) {
+      u32 value = 0;
+      u32 size = track->GetSize();
+      if (size != 0) {
+         assert(offset <= 4294967295);
+         value = offset;
+         offset += size;
+      }
+
+      // Convert the uint32_t value to big-endian format
+      u8 bytes[4];
+      bytes[0] = static_cast<uint8_t>((value >> 24) & 0xFF);
+      bytes[1] = static_cast<uint8_t>((value >> 16) & 0xFF);
+      bytes[2] = static_cast<uint8_t>((value >> 8) & 0xFF);
+      bytes[3] = static_cast<uint8_t>(value & 0xFF);
+      // Write the bytes to the file
+      outFile.write(reinterpret_cast<char*>(bytes), sizeof(bytes));
+   }
+
+   // Write division
+   u8 bytes[4];
+   bytes[0] = static_cast<uint8_t>((division >> 24) & 0xFF);
+   bytes[1] = static_cast<uint8_t>((division >> 16) & 0xFF);
+   bytes[2] = static_cast<uint8_t>((division >> 8) & 0xFF);
+   bytes[3] = static_cast<uint8_t>(division & 0xFF);
+   // Write the bytes to the file
+   outFile.write(reinterpret_cast<char*>(bytes), sizeof(bytes));
+
+   for (Track64* track : tracks) {
+      if (track->GetSize() > 0) {
+         track->Save(outFile);
+      }
+   }
+   // Close the file
+   outFile.close();
+   std::cout << "New sequence successfully written!" << std::endl;
 }

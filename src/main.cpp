@@ -706,6 +706,15 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
             
             ImGui::Checkbox("Show Demo!", &show_demo_window);
             ImGui::Checkbox("Show Piano Roll!", &show_piano_roll);
+            ImGui::SameLine();
+            if (ImGui::Button("Save Edit")) {
+               if (!playing) {
+                  // Save file
+                  currentMidi.Save("temp.seq");
+                  /*stop();*/
+                  // init(seqFile, bankFile, wavetableFile, bankNumber);
+               }
+            }
             ImGui::Checkbox("Show Enabled Tracks!", &show_enabled_tracks);
             //open file dialog when user clicks this button
             if (ImGui::Button("Open Bank File")) {

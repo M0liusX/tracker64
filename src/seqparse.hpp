@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
 #include <PR/ultratypes.h>
 
 /* AL_MIDIstatus */
@@ -92,6 +93,7 @@ public:
 
 public:
    void AddCommand(Command64* command);
+   void Save(std::ofstream& outFile);
    std::vector<Command64*>& GetCommands() { return commands; }
 
    u32 GetSize()                { return size; }
@@ -111,6 +113,7 @@ class Midi64 {
 public:
    Midi64();
    void Parse(std::string file);
+   void Save(std::string file);
    std::vector<Command64*>& GetCommands(u32 track) {
       return tracks[track]->GetCommands();
    }
