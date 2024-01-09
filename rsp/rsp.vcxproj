@@ -142,7 +142,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\ares\memory\fixed-allocator.cpp" />
+    <ClCompile Include="..\src\rsp\ares\memory\fixed-allocator.cpp" />
     <ClCompile Include="..\src\rsp\rsp.cpp" />
   </ItemGroup>
   <ItemGroup>

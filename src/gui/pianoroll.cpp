@@ -37,8 +37,9 @@ void RenderPianoRoll(Midi64& midi, ImGuiIO& io) {
    ImGui::Begin(title.c_str());
    /* Scroll Controls */
    if (ImGui::IsWindowHovered()) {
-      ImVec2 mousePos = ImGui::GetMousePos();
-      std::cout << "X: " << mousePos.x << ", Y: " << mousePos.y << std::endl;
+      //ImVec2 mousePos = ImGui::GetMousePos();
+      //std::cout << "X: " << mousePos.x << ", Y: " << mousePos.y << std::endl;
+      
       //float value = ImGui::GetIO().MouseWheel;
       //if (value == 0) {
       //   scrollSpeed = 0;
@@ -69,8 +70,8 @@ void RenderPianoRoll(Midi64& midi, ImGuiIO& io) {
       wasDown = pressed;
    }
    else if (io.KeyShift) {
-      trackScale.x += 0.0015f * float(io.KeysData[ImGuiKey_RightArrow].Down);
-      trackScale.x -= 0.0015f * float(io.KeysData[ImGuiKey_LeftArrow].Down);
+      trackScale.x += 0.015f * float(io.KeysData[ImGuiKey_RightArrow].Down);
+      trackScale.x -= 0.015f * float(io.KeysData[ImGuiKey_LeftArrow].Down);
       trackScale.y += 0.015f * float(io.KeysData[ImGuiKey_UpArrow].Down);
       trackScale.y -= 0.015f * float(io.KeysData[ImGuiKey_DownArrow].Down);
       trackScale.x = std::clamp<float>(trackScale.x, 0.02f, 1.0f);

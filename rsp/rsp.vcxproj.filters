@@ -15,10 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\ares\memory\fixed-allocator.cpp">
+    <ClCompile Include="..\src\rsp\rsp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\rsp\rsp.cpp">
+    <ClCompile Include="..\src\rsp\ares\memory\fixed-allocator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

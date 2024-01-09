@@ -8,7 +8,7 @@
 #define DEVICE_CHANNELS     2
 #define DEVICE_SAMPLE_RATE  32000
 #define BUFFER_SIZE 320
-#define BUFFER_COUNT 4
+#define BUFFER_COUNT 2
 #include <iostream>
 #include <array>
 #include <atomic>
