@@ -258,3 +258,22 @@ void Track64::AddCommand(Command64* command) {
    }
    size += extra + command->bytes.size() + EncodeDelta(command->delta).size();
 }
+
+u32 Midi64::GetAveragePitch(u32 track) {
+   return tracks[track]->GetAveragePitch();
+}
+
+u32 Track64::GetAveragePitch() {
+   u32 totalNotes = 0;
+   u32 sum = 0;
+   for (Command64* command : commands) {
+      if ((command->status & 0xf0) == AL_MIDI_NoteOn) {
+         sum += command->bytes[0];
+         totalNotes += 1;
+      }
+   }
+   if (totalNotes == 0) {
+      return 0;
+   }
+   return sum / totalNotes;
+}

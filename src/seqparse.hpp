@@ -94,6 +94,8 @@ public:
    void AddCommand(Command64* command);
    std::vector<Command64*>& GetCommands() { return commands; }
 
+   u32  GetAveragePitch();
+
    u32 GetSize()                { return size; }
    void InitLoop()              { loop = size; }
    u32 GetLoopOffset()          { return size - loop; }
@@ -115,6 +117,7 @@ public:
       return tracks[track]->GetCommands();
    }
    u32  GetDivision() { return division; }
+   u32  GetAveragePitch(u32 track);
 private:
    void ParseTrack(u32 track);
    bool ParseCommand(u32 track);
