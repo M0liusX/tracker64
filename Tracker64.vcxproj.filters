@@ -180,6 +180,9 @@
     <ClCompile Include="src\gui\midi.cpp">
       <Filter>gui</Filter>
     </ClCompile>
+    <ClCompile Include="src\gui\pianoroll.cpp">
+      <Filter>gui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lib\libultra-audio\PR\os_internal.h">
@@ -234,6 +237,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\gui\midi.hpp">
+      <Filter>gui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gui\pianoroll.hpp">
       <Filter>gui</Filter>
     </ClInclude>
   </ItemGroup>

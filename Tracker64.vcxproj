@@ -66,6 +66,7 @@
     <ClCompile Include="lib\libultra-audio\src\synstopvoice.cpp" />
     <ClCompile Include="lib\libultra-audio\src\synthesizer.cpp" />
     <ClCompile Include="src\gui\midi.cpp" />
+    <ClCompile Include="src\gui\pianoroll.cpp" />
     <ClCompile Include="src\gui\virtualkeyboard.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\seqparse.cpp" />
@@ -87,6 +88,7 @@
     <ClInclude Include="src\audio\miniaudio.h" />
     <ClInclude Include="src\bank64.hpp" />
     <ClInclude Include="src\gui\midi.hpp" />
+    <ClInclude Include="src\gui\pianoroll.hpp" />
     <ClInclude Include="src\gui\virtualkeyboard.hpp" />
     <ClInclude Include="src\seqparse.hpp" />
     <ClInclude Include="src\synth64.hpp" />
