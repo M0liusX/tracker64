@@ -606,7 +606,7 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
                   // Save file
                   currentMidi.Save("temp.seq");
                   /*stop();*/
-                  // init(seqFile, bankFile, wavetableFile, bankNumber);
+                  init("temp.seq", bankFile, wavetableFile, bankNumber);
                }
             }
             ImGui::Checkbox("Show Enabled Tracks!", &show_enabled_tracks);

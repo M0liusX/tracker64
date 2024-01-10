@@ -1,6 +1,7 @@
 #include "seqparse.hpp"
 #include <fstream>
 #include <cassert>
+#include <algorithm>
 
 #define PRINT(S) std::cout << "SEQPARSE: " + (S) << std::endl;
 
@@ -290,12 +291,26 @@ void Track64::AddCommand(Command64* command) {
       extra = 1;
    }
    size += extra + command->bytes.size() + EncodeDelta(command->delta).size();
+   delta += command->delta;
+   command->delta = delta;
 }
 
+// Custom comparator for sorting based on the value of the pointers
+bool CompareByDelta(const Command64* a, const Command64* b) {
+   return a->delta < b->delta;
+}
 void Track64::Save(std::ofstream& outFile) {
    u8 lstatus = 0;
+   u64 prevDelta = 0;
+
+   /* Sort required for saving proper deltas. */
+   std::sort(commands.begin(), commands.end(), CompareByDelta);
+
    for (Command64* command : commands) {
-      std::vector<u8> deltaBytes = EncodeDelta(command->delta);
+      u64 delta = command->delta - prevDelta;
+      prevDelta = command->delta;
+      std::vector<u8> deltaBytes = EncodeDelta(delta);
+
       outFile.write(reinterpret_cast<char*>(deltaBytes.data()), deltaBytes.size());
 
       u8 mesg = command->status;

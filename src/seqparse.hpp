@@ -78,11 +78,19 @@
 #define AL_CMIDI_CNTRL_LOOPCOUNT_BIG  105
 
 
-struct Command64 {
+enum EditState { IDLE, DRAGGING };
+
+struct CommandEdit64 {
+   EditState currState = IDLE;
+   u64 delta;
+   u32 note;
+};
+typedef struct Command64 {
    u32 status;
    std::vector<u8> bytes;
    u64 delta;
-};
+   CommandEdit64 edit;
+} Command64;
 
 class Track64 {
 public:
@@ -108,6 +116,7 @@ private:
    u32 size = 0;
    u32 loop = 0;
    u32 lstatus = 0;
+   u64 delta = 0;
 };
 
 
