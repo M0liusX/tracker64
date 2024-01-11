@@ -13,7 +13,8 @@ float scrollSpeed;
 u32 division;
 u64 lastEffectDelta;
 
-void RenderNote(Command64* command, ImVec2& offset, ImDrawList* drawList) {
+bool RenderNote(Command64* command, ImVec2& offset, ImDrawList* drawList) {
+   bool madeEdit = false;
    bool isNote = (command->status & 0xf0) == AL_MIDI_NoteOn;
    // TODO: save a decoded duration
    u64 duration = division / 2;
@@ -39,6 +40,7 @@ void RenderNote(Command64* command, ImVec2& offset, ImDrawList* drawList) {
 
    static const float height = 10.0f;
    static const ImU32 yellow = IM_COL32(0xFF, 0xFF,    0, 0xFF);
+   static const ImU32 violet = IM_COL32(0xFF,    0, 0xFF, 0xFF);
    static const ImU32 red    = IM_COL32(0xFF,    0,    0, 0xFF);
    float X = offset.x + (delta + trackOffset.x) * trackScale.x;
    float Y = offset.y + (trackOffset.y + pitch) * trackScale.y;
@@ -49,6 +51,7 @@ void RenderNote(Command64* command, ImVec2& offset, ImDrawList* drawList) {
 
    ImVec2 mousePos = ImGui::GetMousePos();
    bool mouseClicked = ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+   bool mouseRClicked = ImGui::IsMouseClicked(ImGuiMouseButton_Right);
    bool mouseReleased = ImGui::IsMouseReleased(ImGuiMouseButton_Left);
    bool hover = false;
    if ((mousePos.x >= X && mousePos.x <= X2) &&
@@ -63,6 +66,12 @@ void RenderNote(Command64* command, ImVec2& offset, ImDrawList* drawList) {
          command->edit.delta = command->delta;
          if (isNote) { command->edit.note = command->bytes[0]; }
          command->edit.currState = EditState::DRAGGING;
+         madeEdit = true;
+      }
+      else if (hover && mouseRClicked) {
+         // Mark note for deletion
+         command->edit.remove = true;
+         madeEdit = true;
       }
       break;
    case EditState::DRAGGING:
@@ -85,8 +94,10 @@ void RenderNote(Command64* command, ImVec2& offset, ImDrawList* drawList) {
    }
 
    drawList->AddRectFilled(ImVec2(X, Y), ImVec2(X2, Y2),
-      (hover || (command->edit.currState == EditState::DRAGGING)) ? red : yellow,
+      (hover || (command->edit.currState == EditState::DRAGGING)) ? red : (isNote ? yellow : violet),
       5.0f, ImDrawFlags_RoundCornersAll);
+   
+   return madeEdit;
 }
 
 void RenderPianoRoll(Midi64& midi, ImGuiIO& io) {
@@ -151,9 +162,7 @@ void RenderPianoRoll(Midi64& midi, ImGuiIO& io) {
                                      ImVec2( offset.x + (X + W), \
                                              offset.y + (trackOffset.y + Y + H) * trackScale.y), \
                                      C, 5.0f, ImDrawFlags_None);
-   auto commands = midi.GetCommands(trackID);
-   volatile float delta = 0;
-
+   std::vector<Command64*>& commands = midi.GetCommands(trackID);
    //for (u16 i = 0; i < 149; i++) {
    //   DRAW_KEY(0, 2560.0f - (i * 10 * (12.f / 7.f)) - 5, 90, 10 * (12.f / 7.f), IM_COL32(0xFF, 0xFF, 0xFF, 0xFF));
    //}
@@ -174,15 +183,43 @@ void RenderPianoRoll(Midi64& midi, ImGuiIO& io) {
    }
 
    lastEffectDelta = 0;
+   bool madeEdit = false;
    for (auto command : commands) {
-      //delta += command->delta;
-      //if ((command->status & 0xf0) == AL_MIDI_NoteOn) {
-         //std::cout << "NOTE: [pitch]" + std::to_string(command->bytes[0]) << std::endl;
-         //std::cout << "NOTE: [delta]" + std::to_string(command->delta) << std::endl;
-         //std::cout << "NOTE: [duration]" + std::to_string(duration) << std::endl;
-      RenderNote(command, offset, drawList);
-         //delta += duration / 10.0f;
-      //}
+      madeEdit = madeEdit || RenderNote(command, offset, drawList);
+   }
+   
+   // Delete notes marked for deletion
+   if (madeEdit) {
+      std::vector<Command64*>::iterator it = commands.begin();
+      while (it != commands.end()) {
+         auto element = *it;
+         if (element->edit.remove) {
+            it = commands.erase(it);
+         }
+         else ++it;
+      }
+   }
+
+   // Add new note on command
+   bool inWindow = ImGui::IsWindowHovered();
+   bool mouseClicked = ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+   if (!madeEdit && mouseClicked && inWindow) {
+      ImVec2 mousePos = ImGui::GetMousePos();
+      // TODO: Duplicate code
+      float delta = ((mousePos.x - offset.x) / trackScale.x) - trackOffset.x;
+      float pitch = ((mousePos.y - offset.y) / trackScale.y) - trackOffset.y;
+      float note = -1.0f * (((pitch + 5.0) / 10.0f) - 0x100); note += 0.5f;
+
+      // TODO: Remove encoded duration?
+      std::vector<u8> encDuration = Track64::EncodeDelta(division);
+
+      Command64* newNote = new Command64();
+      newNote->status = AL_MIDI_NoteOn;
+      newNote->bytes.push_back(std::round(note));
+      newNote->bytes.push_back(0x64);
+      newNote->bytes.insert(newNote->bytes.end(), encDuration.begin(), encDuration.end());
+      newNote->delta = delta;
+      commands.push_back(newNote);
    }
 
    // Draw Piano

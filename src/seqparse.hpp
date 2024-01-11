@@ -84,6 +84,7 @@ struct CommandEdit64 {
    EditState currState = IDLE;
    u64 delta;
    u32 note;
+   bool remove;
 };
 typedef struct Command64 {
    u32 status;
