@@ -40,4 +40,5 @@ int getValidTracks();
 void resetBank(int bank);
 
 void getBankData(int bankNum, Bank64* bank64);
+int getBankCount();
 #endif

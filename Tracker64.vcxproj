@@ -65,6 +65,7 @@
     <ClCompile Include="lib\libultra-audio\src\synstartvoiceparam.cpp" />
     <ClCompile Include="lib\libultra-audio\src\synstopvoice.cpp" />
     <ClCompile Include="lib\libultra-audio\src\synthesizer.cpp" />
+    <ClCompile Include="src\bank64.cpp" />
     <ClCompile Include="src\gui\midi.cpp" />
     <ClCompile Include="src\gui\pianoroll.cpp" />
     <ClCompile Include="src\gui\virtualkeyboard.cpp" />

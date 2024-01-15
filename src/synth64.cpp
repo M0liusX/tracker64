@@ -148,6 +148,11 @@ int getValidTracks() {
    return validTracks;
 }
 
+int getBankCount() {
+   ALBankFile* bankFile = (ALBankFile*)getRamObject(ctlFileAddress);
+   return bankFile->bankCount;
+}
+
 void getBankData(int bankNum, Bank64* bank64) {
    bank64->instruments.clear();
    if (!initialized) {
@@ -157,10 +162,29 @@ void getBankData(int bankNum, Bank64* bank64) {
 
    ALBankFile* bankFile = (ALBankFile*)getRamObject(ctlFileAddress);
    ALBank* bank = bankFile->getBank(bankNum);
+   bank64->pad = bank->pad;
+   bank64->sampleRate = bank->sampleRate;
+   // TODO: Work with perc
+   void* perc = (void*) *bank->percussionAddress();
+   assert(perc == NULL);
+
    for (int i = 0; i < bank->instCount; i++) {
       Inst64 inst;
       ALInstrument* alInst = bank->getInstrument(i);
+      inst.volume = alInst->volume;
+      inst.pan = alInst->pan;
+      inst.priority = alInst->priority;
+      inst.tremType = alInst->tremType;
+      inst.tremRate = alInst->tremRate;
+      inst.tremDepth = alInst->tremDepth;
+      inst.tremDelay = alInst->tremDelay;
+      inst.vibType = alInst->vibType;
+      inst.vibRate = alInst->vibRate;
+      inst.vibDepth = alInst->vibDepth;
+      inst.vibDelay = alInst->vibDelay;
+      inst.bendRange = alInst->bendRange;
       for (int s = 0; s < alInst->soundCount; s++) {
+         /* Load sound */
          Sound64 sound;
          ALSound* alSound = alInst->getSound(s);
          ALKeyMap* alKeymap = alSound->getKeyMap();
@@ -168,6 +192,33 @@ void getBankData(int bankNum, Bank64* bank64) {
          sound.keymap.keyMax = alKeymap->keyMax;
          sound.keymap.velocityMin = alKeymap->velocityMin;
          sound.keymap.velocityMax = alKeymap->velocityMax;
+         sound.keymap.keyBase = alKeymap->keyBase;
+         sound.keymap.detune = alKeymap->detune;
+
+         ALEnvelope* alEnv = alSound->getEnvelope();
+         sound.envelope.attackTime = alEnv->attackTime;
+         sound.envelope.attackVol = alEnv->attackVolume;
+         sound.envelope.decayTime = alEnv->decayTime;
+         sound.envelope.decayVol = alEnv->decayVolume;
+         sound.envelope.releaseTime = alEnv->releaseTime;
+
+         ALWaveTable* alWave = alSound->getWaveTable();
+         ALADPCMWaveInfo alWaveInfo = alWave->waveInfo.adpcmWave;
+         assert(alWave->type == AL_ADPCM_WAVE); // TODO: Work with raw waves
+
+         ALADPCMloop* alLoop = alWaveInfo.getLoop();
+         sound.wave.loop.count = alLoop->count;
+         sound.wave.loop.end = alLoop->end;
+         sound.wave.loop.start = alLoop->start;
+
+         ALADPCMBook* alBook = alWaveInfo.getBook();
+         sound.wave.book.order = alBook->order;
+         sound.wave.book.predictors = alBook->npredictors;
+         sound.wave.book.pages = (void*)alBook->book;
+
+         sound.wave.raw = (void*) alWave->base;
+         sound.wave.len = alWave->len;
+
          inst.sounds.push_back(sound);
       }
       bank64->instruments.push_back(inst);
