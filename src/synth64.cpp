@@ -206,17 +206,24 @@ void getBankData(int bankNum, Bank64* bank64) {
          ALADPCMWaveInfo alWaveInfo = alWave->waveInfo.adpcmWave;
          assert(alWave->type == AL_ADPCM_WAVE); // TODO: Work with raw waves
 
-         ALADPCMloop* alLoop = alWaveInfo.getLoop();
-         sound.wave.loop.count = alLoop->count;
-         sound.wave.loop.end = alLoop->end;
-         sound.wave.loop.start = alLoop->start;
+         void* loop = (void*) *alWaveInfo.loopAddress();
+         if (loop) {
+            ALADPCMloop* alLoop = alWaveInfo.getLoop();
+            sound.wave.loop.count = alLoop->count;
+            sound.wave.loop.end = alLoop->end;
+            sound.wave.loop.start = alLoop->start;
+            sound.wave.loop.state = &alLoop->state;
+            sound.wave.loop.valid = true;
+         } else {
+            sound.wave.loop.valid = false;
+         }
 
          ALADPCMBook* alBook = alWaveInfo.getBook();
          sound.wave.book.order = alBook->order;
          sound.wave.book.predictors = alBook->npredictors;
          sound.wave.book.pages = (void*)alBook->book;
 
-         sound.wave.raw = (void*) alWave->base;
+         sound.wave.raw = alWave->base;
          sound.wave.len = alWave->len;
 
          inst.sounds.push_back(sound);

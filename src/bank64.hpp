@@ -31,11 +31,13 @@ typedef struct {
    int start;
    int end;
    int count;
+   void* state;
+   bool valid;
 } Loop64;
 
 typedef struct {
-   void* raw;
-   int   len;
+   int    raw;
+   int    len;
    Book64 book;
    Loop64 loop;
 } Wave64;
@@ -72,10 +74,10 @@ typedef struct {
 } Bank64;
 
 typedef struct {
-   std::vector<void*> bankDataChunks;   
+   std::vector<std::vector<unsigned char>> bankDataChunks;   
 } BankFile64;
 
-void* SaveBank(Bank64* bank);
-void  SaveBankFile(std::string filename, BankFile64* bankfile);
+void SaveBank(std::vector<unsigned char>& dataChunk, Bank64* bank);
+void SaveBankFile(std::string filename, BankFile64* bankfile);
 
 #endif
