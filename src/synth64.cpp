@@ -225,6 +225,7 @@ void getBankData(int bankNum, Bank64* bank64) {
 
          sound.wave.raw = alWave->base;
          sound.wave.len = alWave->len;
+         sound.wave.id = *alSound->wavetableAddress();
 
          inst.sounds.push_back(sound);
       }

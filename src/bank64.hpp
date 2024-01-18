@@ -40,6 +40,7 @@ typedef struct {
    int    len;
    Book64 book;
    Loop64 loop;
+   unsigned int id;
 } Wave64;
 
 typedef struct {
