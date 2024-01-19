@@ -491,6 +491,7 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
     float scrollSpeed;
     std::string bankFile, wavetableFile, seqFile;
     Midi64 currentMidi;
+    BankFile64 currentBankFile;
 
     /* Init Synth */
     startaudiothread();
@@ -631,6 +632,19 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
             if (ImGui::Button("Reset Bank")) {
                resetBank(bankNumber);
                getBankData(bankNumber, &currentBank);
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Save Bank")) {
+               int totalBanks = getBankCount();
+               currentBankFile.bankDataChunks.resize(totalBanks);
+               for (int i = 0; i < getBankCount(); i++) {
+                  resetBank(i);
+                  getBankData(i, &currentBank);
+                  SaveBank(&currentBankFile.bankDataChunks[i], &currentBank);
+               }
+               resetBank(bankNumber);
+               getBankData(bankNumber, &currentBank);
+               SaveBankFile("temp.ctl", &currentBankFile);
             }
             if ((currState != PLAYBACK_READY) || playing) { ImGui::EndDisabled(); }
 

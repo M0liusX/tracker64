@@ -223,10 +223,12 @@ void getBankData(int bankNum, Bank64* bank64) {
          sound.wave.book.predictors = alBook->npredictors;
          sound.wave.book.pages = (void*)alBook->book;
 
-         sound.wave.raw = alWave->base;
+         sound.wave.raw = alWave->base - tblFileAddress; // Remove offset into tbl in N64 RAM
          sound.wave.len = alWave->len;
          sound.wave.id = *alSound->wavetableAddress();
 
+         sound.samplePan = alSound->samplePan;
+         sound.sampleVolume = alSound->sampleVolume;
          inst.sounds.push_back(sound);
       }
       bank64->instruments.push_back(inst);

@@ -1,6 +1,7 @@
 #include "bank64.hpp"
 
 #include <iostream>
+#include <fstream>
 #include <cassert>
 #include <map>
 
@@ -22,9 +23,29 @@ void push8(BYTES& bytes, unsigned char c) {
    bytes.push_back(c);
 }
 
-void SaveBank(std::vector<unsigned char>& dataChunk,
+void SaveFile(std::string filename, BYTES& bytes, bool append = false) {
+   // Open a file for writing (truncating the existing file or creating a new one)
+   int flags = std::ios::binary;
+   if (append) {
+      flags |= std::ios::app;
+   }
+   std::ofstream outFile(filename, flags);
+
+   if (!outFile.is_open()) {
+      std::cerr << "Error opening the file for writing." << std::endl;
+      assert(false);
+      return;
+   }
+
+   outFile.write(reinterpret_cast<char*>(bytes.data()), bytes.size());
+   outFile.close();
+}
+
+void SaveBank(BankChunk* bankChunk,
               Bank64* bank)
 {
+   BYTES& dataChunk = bankChunk->dataChunk;
+   dataChunk.clear();
    // Envelopes
    unsigned int offset = 0;
    for (auto& inst : bank->instruments) {
@@ -61,7 +82,7 @@ void SaveBank(std::vector<unsigned char>& dataChunk,
    for (auto& inst : bank->instruments) {
       for (auto& sound : inst.sounds) {
          // New wave to add
-         if (waveMap.find(sound.wave.id) != waveMap.end()) {
+         if (waveMap.find(sound.wave.id) == waveMap.end()) {
             // Wave Book
             unsigned int bookStart = offset;
             push32(dataChunk, sound.wave.book.order);
@@ -158,12 +179,34 @@ void SaveBank(std::vector<unsigned char>& dataChunk,
       push32(dataChunk, 0); // padding
       offset += 4;
    }
-   std::cout << offset << std::endl;
+   
+   SaveFile("temp.bank", dataChunk);
+   //std::cout << offset << std::endl;
 }
 
 void SaveBankFile(std::string filename, 
                   BankFile64* bankfile)
 {
-    assert(false);
-    return;
+   // Generate Header
+   int bankCount = bankfile->bankDataChunks.size();
+   int usePadding = (bankCount + 1) % 2;
+   unsigned int offset = 4 + 4 * bankCount + usePadding * 4;
+   BYTES header;
+   push16(header, 0x3142); // 0x4231 big endian
+   push16(header, bankCount);
+   for (int i = 0; i < bankCount; i++) {
+      int start = bankfile->bankDataChunks[i].dataStart + offset;
+      offset += bankfile->bankDataChunks[i].dataChunk.size();
+      push32(header, start);
+   }
+   if (usePadding) {
+      push32(header, 0);
+   }
+
+   // Save header and append bankChunks
+   SaveFile(filename, header);
+   for (int i = 0; i < bankCount; i++) {
+      SaveFile(filename, bankfile->bankDataChunks[i].dataChunk, true);
+   }
+
 }

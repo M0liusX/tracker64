@@ -72,13 +72,19 @@ typedef struct {
    int sampleRate;     /* e.g. 44100, 22050, etc...       */
    Inst64* percussion;
    std::vector<Inst64> instruments;
+   int tblFileAddress;
 } Bank64;
 
 typedef struct {
-   std::vector<std::vector<unsigned char>> bankDataChunks;   
+   std::vector<unsigned char> dataChunk;
+   int dataStart;
+} BankChunk;
+
+typedef struct {
+   std::vector<BankChunk> bankDataChunks;
 } BankFile64;
 
-void SaveBank(std::vector<unsigned char>& dataChunk, Bank64* bank);
+void SaveBank(BankChunk* bankChunk, Bank64* bank);
 void SaveBankFile(std::string filename, BankFile64* bankfile);
 
 #endif
