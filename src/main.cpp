@@ -637,10 +637,12 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
             if (ImGui::Button("Save Bank")) {
                int totalBanks = getBankCount();
                currentBankFile.bankDataChunks.resize(totalBanks);
+               unsigned int offset = totalBanks * 4 + 4 + ((totalBanks + 1) % 2) * 4;
                for (int i = 0; i < getBankCount(); i++) {
                   resetBank(i);
                   getBankData(i, &currentBank);
-                  SaveBank(&currentBankFile.bankDataChunks[i], &currentBank);
+                  SaveBank(&currentBankFile.bankDataChunks[i], &currentBank, offset);
+                  offset += currentBankFile.bankDataChunks[i].dataChunk.size();
                }
                resetBank(bankNumber);
                getBankData(bankNumber, &currentBank);

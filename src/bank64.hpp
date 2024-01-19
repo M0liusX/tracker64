@@ -84,7 +84,7 @@ typedef struct {
    std::vector<BankChunk> bankDataChunks;
 } BankFile64;
 
-void SaveBank(BankChunk* bankChunk, Bank64* bank);
+void SaveBank(BankChunk* bankChunk, Bank64* bank, unsigned int pos);
 void SaveBankFile(std::string filename, BankFile64* bankfile);
 
 #endif
