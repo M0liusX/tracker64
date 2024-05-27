@@ -22,14 +22,14 @@ typedef struct {
 /* TODO: Seperate audio callback mechanism from synth. */
 void startaudiothread();
 
-void init(std::string seqPath, std::string bankPath, std::string wavetablePath, int bank);
+void init(std::string seqPath, std::string bankPath, std::string wavetablePath, int bank, int fx = 0);
 int mainloop(float volume = 1.0f);
 
 /* Interactable actions. */
 void play();
 void pause();
 void stop();
-void record(std::string name);
+void record(std::string name, int loops);
 void scrub(float pos);
 void getloc(float& pos); // TODO: Maybe let application keep track of position? Non-trivial with a blackbox synth.
 void sendevent(Midi64Event e);

@@ -130,7 +130,7 @@ void stop() {
 
 void play() {
    if (!initialized) { return; }
-   cseq.validTracks &= currentEnabledTracks;
+   cseq.mutedTracks = ~currentEnabledTracks;
    alCSPPlay(&cseqPlayer);
 }
 
@@ -141,7 +141,7 @@ void pause() {
 
 void setEnabledTracks(int enabledTracks) {
    currentEnabledTracks = enabledTracks;
-   cseq.validTracks &= currentEnabledTracks;
+   cseq.mutedTracks = ~currentEnabledTracks;
 }
 
 int getValidTracks() {
@@ -291,11 +291,12 @@ void resetBank(int bank) {
    }
 }
 
-void init(std::string seqPath, std::string bankPath, std::string wavetablePath, int bank) {
+void init(std::string seqPath, std::string bankPath, std::string wavetablePath, int bank, int fx) {
    if (initialized) { 
       stop();
       alClose(&audioGlobals);
    }
+   std::cout << "SYNTH64: Init Start" << std::endl;
    initialized = false;
    lastLocTicks = 0;
    overflowAccumulator = 0;
@@ -312,14 +313,21 @@ void init(std::string seqPath, std::string bankPath, std::string wavetablePath, 
    std::vector<u8> ctlFile;
    std::vector<u8> tblFile;
 
+   std::cout << "SYNTH64: Load Binds" << std::endl;
+   std::cout << "SYNTH64: Load audio_data.zbin" << std::endl;
    loadbin("ucode/audio_data.zbin", dmem, 0); // rsp udata
+   std::cout << "SYNTH64: Load audio.zbin" << std::endl;
    loadbin("ucode/audio.zbin", imem, 0x80); // rsp ucode
+   std::cout << "SYNTH64: Load seq" << std::endl;
    loadfile(seqPath, seqFile); // seq (midi) file
+   std::cout << "SYNTH64: Load bank" << std::endl;
    loadfile(bankPath, ctlFile); // soundbank file
+   std::cout << "SYNTH64: Load waves" << std::endl;
    loadfile(wavetablePath, tblFile); // wavetable file
    swapbytes(17, seqFile.data()); // swap header for endianess compatibility
 
    /* Reserve and initialize these memory regions in our virtual RDRAM. */
+   std::cout << "SYNTH64: Reserve Memory Regions" << std::endl;
    seqFileAddress = 0;
    ctlFileAddress = (seqFile.size() + 0xF) & (~0xF);
    tblFileAddress = ((ctlFileAddress + ctlFile.size()) + 0xF) & (~0xF);
@@ -351,9 +359,10 @@ void init(std::string seqPath, std::string bankPath, std::string wavetablePath, 
        .dmaproc = (void*)audioNewDma, // explained later
        .heap = &audioHp,
        .outputRate = audioRate,
-       .fxType = AL_FX_BIGROOM,
+       .fxType = (ALFxId) fx,
    };
    audioGlobals = {};
+   std::cout << "SYNTH64: Init audio globals" << std::endl;
    alInit(&audioGlobals, &scfg);
    audioGlobals.rdram = rdram;
 
@@ -370,6 +379,7 @@ void init(std::string seqPath, std::string bankPath, std::string wavetablePath, 
    };
    cseqPlayer = {};
    midiPlayer = {};
+   std::cout << "SYNTH64: Init Seq Players" << std::endl;
    alCSPNew(&cseqPlayer, &cscfg);
    alCSPNew(&midiPlayer, &cscfg);
 
@@ -378,6 +388,7 @@ void init(std::string seqPath, std::string bankPath, std::string wavetablePath, 
    alCSPSetSeq(&cseqPlayer, &cseq);
    alCSPSetSeq(&midiPlayer, 0);
 
+   std::cout << "SYNTH64: Init Bank" << std::endl;
    ALBankFile* bankFile = (ALBankFile*)getRamObject(ctlFileAddress);
    alBnkfNew(ctlFileAddress, tblFileAddress);
    alCSPSetBank(&cseqPlayer, bankFile->getBank(bank));
@@ -392,6 +403,7 @@ void init(std::string seqPath, std::string bankPath, std::string wavetablePath, 
       initialized = false;
    }
    else {
+      std::cout << "SYNTH64: Start Seq" << std::endl;
       alCSPPlay(&midiPlayer);
    }
 }
@@ -445,24 +457,37 @@ int mainloop(float volume) {
    return 0;
 }
 
-void record(std::string name) {
+void record(std::string name, int num) {
    std::ofstream binfile("temp.sw", std::ofstream::binary);
 
    ALCSeqMarker currMarker, p, lp;
    alCSeqGetLoc(&cseq, &currMarker);
-   cseq.validTracks &= currentEnabledTracks;
+   cseq.mutedTracks = ~currentEnabledTracks;
    alCSPPlay(&cseqPlayer);
 
    u32 state = 0;
    float pos;
    alCSeqGetLoc(&cseq, &p);
-   while (state < 2) {
+   int loopingtrack = -1;
+   while (state < num) {
       lp = p;
       audioFrame();
       u8* output = (rdram + audioBufferAddress);
       binfile.write((char*)output, AUDIO_BUFSZ * 4);
       alCSeqGetLoc(&cseq, &p);
-      bool finished = (p.curLoc[0] < lp.curLoc[0]);
+      bool finished = false;
+      if (loopingtrack == -1) {
+         for (int i = 0; i < 16; i++) {
+            finished |= (p.curLoc[i] < lp.curLoc[i]);
+            if (finished) {
+               loopingtrack = i;
+               break;
+            }
+         }
+      }
+      else {
+         finished = (p.curLoc[loopingtrack] < lp.curLoc[loopingtrack]);
+      }
       getloc(pos);
       if (finished) {
          state++;

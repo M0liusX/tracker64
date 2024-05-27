@@ -77,6 +77,7 @@ void Midi64::Parse(std::string file) {
    }
 
    for (int i = 0; i < 16; i++) {
+      PRINT("PARSE TRACK " + std::to_string(i));
       ParseTrack(i);
    }
    // No more need for the bytes

@@ -716,6 +716,7 @@ typedef struct ALCSeq_s {
     u8            curBULen[16];      /* if > 0, then in backup mode           */
     u8            lastStatus[16];    /* for running status                    */
     u32           evtDeltaTicks[16]; /* delta time to next event              */
+    u32           mutedTracks;
 } ALCSeq;
 
 typedef struct {

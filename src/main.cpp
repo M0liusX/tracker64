@@ -487,6 +487,8 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
     ImVec2 trackOffset = { 0.f, -1590.0f };
     ImVec2 trackScale = { 1.f, 3.5f };
     int trackID = 0;
+    int loopcount = 1;
+    int currentFX = 2;
     bool wasDown = 0;
     float scrollSpeed;
     std::string bankFile, wavetableFile, seqFile;
@@ -607,7 +609,7 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
                   // Save file
                   currentMidi.Save("temp.seq");
                   /*stop();*/
-                  init("temp.seq", bankFile, wavetableFile, bankNumber);
+                  init("temp.seq", bankFile, wavetableFile, bankNumber, currentFX);
                }
             }
             ImGui::Checkbox("Show Enabled Tracks!", &show_enabled_tracks);
@@ -653,6 +655,27 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
             ImGui::SameLine();
             ImGui::SliderInt("##bank", &bankNumber, 0x00, 0xFF, "0x%02X");
             
+            /* FX / Reverb */
+            ImGui::Columns(2);
+            ImGui::SetColumnWidth(0, 50); // Adjust the width as needed
+            ImGui::Text("FX: ");
+            ImGui::NextColumn();
+            const char* options[] = { "None", "Small Room", "Big Room", "Chorus", "Flange", "Echo", "Custom"};
+            if (ImGui::BeginCombo("##FX", options[currentFX], ImGuiComboFlags_PopupAlignLeft)) {
+               for (int i = 0; i < IM_ARRAYSIZE(options); i++) {
+                  bool isSelected = (currentFX == i);
+                  if (ImGui::Selectable(options[i], isSelected)) {
+                     currentFX = i;
+                  }
+                  if (isSelected) {
+                     ImGui::SetItemDefaultFocus();
+                  }
+               }
+               ImGui::EndCombo();
+            }
+            // End the column layout
+            ImGui::Columns(1);
+
             /* Playback Controls */
             {
                if (currState != PLAYBACK_READY) { ImGui::BeginDisabled(); }
@@ -683,8 +706,10 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
                if ((currState != PLAYBACK_READY) || playing) { ImGui::BeginDisabled(); }
                if (ImGui::Button("Record")) {
                   std::string s(buf);
-                  record(s);
+                  record(s, loopcount);
                }
+               ImGui::SameLine();
+               ImGui::SliderInt("##loopcount", &loopcount, 0x01, 0xFF, "%02X");
                ImGui::SameLine();
                ImGui::InputText("Ouput wav file", buf, IM_ARRAYSIZE(buf));
                if ((currState != PLAYBACK_READY) || playing) { ImGui::EndDisabled(); }
@@ -706,8 +731,9 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
                      seqFile = fileDialog.GetSelected().string();
                      currentMidi = Midi64();
                      currentMidi.Parse(seqFile);
+                     printf("SeqParse Complete\n");
                      SetCurrentTrack(-1); // Resest piano roll
-                     init(seqFile, bankFile, wavetableFile, bankNumber);
+                     init(seqFile, bankFile, wavetableFile, bankNumber, currentFX);
                      getBankData(bankNumber, &currentBank);
                      validTracks = getValidTracks();
                      playing = false;
@@ -749,9 +775,9 @@ ImGui_ImplVulkan_DestroyFontUploadObjects();
                         std::cout << tokens[1] << std::endl;
                         seqFile = seqpath + tokens[0];
                         stop();
-                        init(seqFile, bankFile, wavetableFile, std::stoi(tokens[2]));
+                        init(seqFile, bankFile, wavetableFile, std::stoi(tokens[2]), currentFX);
                         validTracks = getValidTracks();
-                        record(tokens[1]);
+                        record(tokens[1], loopcount);
                         // currState = PLAYBACK_READY;
 
                         // Clear the vector for the next line

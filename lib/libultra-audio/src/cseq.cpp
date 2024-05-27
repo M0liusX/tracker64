@@ -236,10 +236,14 @@ static u32 __alCSeqGetTrackEvent(ALCSeq *seq, u32 track, ALEvent *event)
         {
             event->msg.midi.byte2 = __getTrackByte(seq,track);
             if((event->msg.midi.status & 0xf0) == AL_MIDI_NoteOn)
-            {
+            {     
+               // TRACKER64: Mute tracks
+               if ((1 << track) & seq->mutedTracks) {
+                  event->msg.midi.byte2 = 0;
+               }
                 event->msg.midi.duration = __readVarLen(seq,track);
 #ifdef _DEBUG
-            assert(event->msg.midi.byte2 && "cseq: ERR_ALCSEQZEROVEL");
+                //assert(event->msg.midi.byte2 && "cseq: ERR_ALCSEQZEROVEL");
                 /*if(event->msg.midi.byte2 == 0)
                     __osError( ERR_ALCSEQZEROVEL, 1, track);*/
 #endif                
