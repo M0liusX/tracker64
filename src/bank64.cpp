@@ -41,13 +41,18 @@ void SaveFile(std::string filename, BYTES& bytes, bool append = false) {
    outFile.close();
 }
 
+
+// Sound Data with Optional Wave Data
+std::map<unsigned int, unsigned int> waveMap;
 void SaveBank(BankChunk* bankChunk,
-              Bank64* bank)
+              Bank64* bank,
+              unsigned int pos)
 {
    BYTES& dataChunk = bankChunk->dataChunk;
    dataChunk.clear();
    // Envelopes
-   unsigned int offset = 0;
+   unsigned int offset = pos;
+   unsigned int envelopeStart = offset;
    for (auto& inst : bank->instruments) {
       for (auto& sound : inst.sounds) {
          push32(dataChunk, sound.envelope.attackTime);
@@ -75,8 +80,6 @@ void SaveBank(BankChunk* bankChunk,
       }
    }
 
-   // Sound Data with Optional Wave Data
-   std::map<unsigned int, unsigned int> waveMap;
    std::vector<unsigned int> soundStarts;
    unsigned int soundIdx = 0;
    for (auto& inst : bank->instruments) {
@@ -123,7 +126,7 @@ void SaveBank(BankChunk* bankChunk,
 
          // Sound Data Start
          soundStarts.push_back(offset);
-         push32(dataChunk, 16 * soundIdx);
+         push32(dataChunk, envelopeStart + (16 * soundIdx));
          push32(dataChunk, keymapStart + (8 * soundIdx));
          push32(dataChunk, waveMap[sound.wave.id]);
          push8(dataChunk, sound.samplePan);
@@ -166,6 +169,7 @@ void SaveBank(BankChunk* bankChunk,
    }
 
    // Bank Data Start
+   bankChunk->dataStart = offset;
    push16(dataChunk, bank->instruments.size());
    push8(dataChunk, 0); // flag
    push8(dataChunk, bank->pad);
@@ -190,13 +194,11 @@ void SaveBankFile(std::string filename,
    // Generate Header
    int bankCount = bankfile->bankDataChunks.size();
    int usePadding = (bankCount + 1) % 2;
-   unsigned int offset = 4 + 4 * bankCount + usePadding * 4;
    BYTES header;
-   push16(header, 0x3142); // 0x4231 big endian
+   push16(header, 0x4231); // 0x4231 big endian
    push16(header, bankCount);
    for (int i = 0; i < bankCount; i++) {
-      int start = bankfile->bankDataChunks[i].dataStart + offset;
-      offset += bankfile->bankDataChunks[i].dataChunk.size();
+      int start = bankfile->bankDataChunks[i].dataStart;
       push32(header, start);
    }
    if (usePadding) {
@@ -208,5 +210,6 @@ void SaveBankFile(std::string filename,
    for (int i = 0; i < bankCount; i++) {
       SaveFile(filename, bankfile->bankDataChunks[i].dataChunk, true);
    }
+   waveMap.clear();
 
 }
